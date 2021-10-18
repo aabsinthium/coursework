@@ -1,0 +1,1057 @@
+############# Model developed for the study"Comparative Greenhouse Gas Footprinting
+# of Online Versus Traditional Shopping for Fast Moving Consumer Goods: A Stochastic Approach"
+
+### By: Sadegh Shahmohammadi et al.
+
+start_time <- Sys.time()
+
+library(mc2d)
+
+BS_PP <- round(rpert(n=100000, min=1, mode=2, max=5)) ### basket size pure players
+BS_BC <- round(rpert(n=100000,5,45,100))  # basket size bricks & clicks
+Product_Weight <- rlnorm(100000, meanlog = -1.38, sdlog = 1.14)
+Item_Volume <- Product_Weight
+
+
+################# Passenger Car ############
+
+Passenger_car_Maintenance_GHG <- 1080 #Kg per car
+Car_Mileage <- 2400000 #km
+
+GHG_Passenger_car_Maintenance <- Passenger_car_Maintenance_GHG/Car_Mileage #KgCO2-eq per km
+
+Passenger_car_Production_GHG <- 7 # kg per kg car
+Car_Weight <- 1000
+
+GHG_Passenger_car_Production <- Passenger_car_Production_GHG*Car_Weight/Car_Mileage #KgCO2-eq per km
+
+GHG_Car_Prod_Maintain <- GHG_Passenger_car_Maintenance + GHG_Passenger_car_Production
+#############     Pure Player      ##########
+
+#################################### Last Mile Packging PP ###########################
+
+##### Cardboard box
+
+Box_Saturation <- rpert(100000,0.1,0.5,0.9)
+gCardbordbox_per_Liter <- 12.5 
+LastMile_box_perItem <- Item_Volume*gCardbordbox_per_Liter/Box_Saturation # in grams
+GHG_Waste <- rep(c(0,0.0015),c(79000,21000)) #kgGHG per g paper
+GHG_Waste <- sample(GHG_Waste, 100000, replace = FALSE, prob = NULL)
+
+GHG_CardboardBox <- 0.001   #KgCO2-eq per g cardboard box 
+KG_GHG_CardboardBox_PerItem <- LastMile_box_perItem * (GHG_CardboardBox + GHG_Waste)
+
+
+###### Kraft Paper to fill the Void
+Void_filled_per_gKraftPaper <- 33   # in cm3
+g_Kraftpaper_PerItem <- (1/Void_filled_per_gKraftPaper)*(Item_Volume*1000)*(1-Box_Saturation)
+GHG_KraftPaper <- 0.0012  # Kg GHG per g Kraft Paper (ecoinvent unbleached Kraft Paper)
+KG_GHG_KraftPaper_PerItem <- g_Kraftpaper_PerItem * (GHG_KraftPaper  + GHG_Waste)
+
+Total_GHG_LM_Packging_PP2 <- KG_GHG_CardboardBox_PerItem + KG_GHG_KraftPaper_PerItem
+
+Total_GHG_Packaging_PP2 <- rep(999,100000)
+for (i in 1:100000){
+Total_GHG_Packaging_PP2[i] <-  sum(sample(Total_GHG_LM_Packging_PP2, BS_PP[i], replace = FALSE, prob = NULL))
+}
+
+
+######################################## Last Mile Delivery PP #################################
+
+LCV_GHG_per_km <- rlnorm(100000,-1.36,.23)
+
+Stem_Mileage <- rlnorm (100000, 2.88,.76)*2 
+Drop_Mileage <- rpert(100000,3.6,40,96)
+
+Total_LMDistance <- Stem_Mileage + Drop_Mileage 
+
+Deliveries_per_Tour <- rpert(100000,32,100,168) 
+
+Distance_per_Drop <- Total_LMDistance/Deliveries_per_Tour 
+
+CargoBike_EI_Bike <- 0.05 # KgCO2-eq/km
+CargoBike_EI_Battery <- 0.01 # KgCO2-eq/km
+
+CargoBike_EI_Electricity_CN <- 0.02*1.19  # KgCO2-eq/km (EI china = 1.19 kgCO2-eq per kWh and 0.02 kWh/km) 
+CargoBike_EI_Electricity_NL <- 0.02*0.62
+CargoBike_EI_Electricity_UK <- 0.02*0.83
+CargoBike_EI_Electricity_US <- 0.02*0.70
+
+CargoBike_EI_total <- CargoBike_EI_Bike + CargoBike_EI_Battery + CargoBike_EI_Electricity_CN  # KgCO2-eq/km
+
+Distance_CDP <- rpert(100000,2,4,10) #in km
+Average_car_GHGperKm <- 0.13 + GHG_Car_Prod_Maintain
+
+
+GHG_per_Drop <- Distance_per_Drop*LCV_GHG_per_km  # in KgCO2-eq
+
+GHG_per_Drop_CargoBike <- (Stem_Mileage/Deliveries_per_Tour) * LCV_GHG_per_km + (Drop_Mileage/Deliveries_per_Tour) * CargoBike_EI_total   # in KgCO2-eq  
+
+
+
+Filed_Delivery<- rbinom(100000, 1, 0.14)
+Failed_n_Redelivered <- rbinom(100000, 1, 0.5) 
+Extra_GHG <- rep(999,100000)
+
+Total_GHG_per_Drop <- rep(999,100000)
+
+Extra_GHG_per_Drop_CargoBike <-rep(999,100000)
+
+Total_GHG_per_Drop_CargoBike <- rep(999,100000)
+
+
+for (i in 1:100000){
+  
+  if (Filed_Delivery[i] == 0 ) {
+    
+    Extra_GHG[i] <- 0
+ 
+    Extra_GHG_per_Drop_CargoBike[i] <- 0
+   
+    
+  } else if ( Filed_Delivery[i] == 1 & Failed_n_Redelivered[i] == 1) {
+   
+    Extra_GHG[i] <- GHG_per_Drop[i]
+    
+    Extra_GHG_per_Drop_CargoBike[i] <- GHG_per_Drop_CargoBike[i] 
+   
+    
+  } else {
+    if(Distance_CDP[i] <= 4) {
+      
+      Extra_GHG[i] <- 0
+      
+      Extra_GHG_per_Drop_CargoBike[i] <- 0 
+     
+    }
+    else {
+      
+      Extra_GHG[i] <- Distance_CDP[i] * Average_car_GHGperKm
+     
+      Extra_GHG_per_Drop_CargoBike[i] <- Distance_CDP[i] * Average_car_GHGperKm
+      
+    }
+  } 
+  
+  Total_GHG_per_Drop[i] <- GHG_per_Drop[i] + Extra_GHG[i] 
+
+  Total_GHG_per_Drop_CargoBike[i] <- GHG_per_Drop_CargoBike[i] + Extra_GHG_per_Drop_CargoBike[i]
+  
+}
+
+
+Total_LM_GHG_Per_Item <-  (Total_GHG_per_Drop + Total_GHG_Packaging_PP2)/BS_PP
+
+Total_LM_GHG_Per_Item_CargoBike <- (Total_GHG_per_Drop_CargoBike + Total_GHG_Packaging_PP2)/BS_PP
+
+
+
+############## Bricks and Clicks
+
+
+Distance_per_delivery_BC <- rpert(100000,2.1,4.3,7.3) #reference: New trends on urban goods movement (France) 
+Total_LM_GHG_BC_perDrop <- Distance_per_delivery_BC*LCV_GHG_per_km
+
+Total_LM_GHG_Per_Item_BC <- Total_LM_GHG_BC_perDrop/BS_BC
+
+############################ Bricks & Mortar UK #################################
+
+Mode_UK <- c(rep(1,9000),rep(2,80000), rep(3,10000),rep(4,1000))   #1: Walk, 2: Car/van, 3: Bus, 4: Bike
+Mode_UK <- sample(Mode_UK, 100000, replace = FALSE, prob = NULL)
+
+Distance_Walk_UK <- rlnorm(100000, meanlog = -0.28, sdlog = 0.62)*1.609344  # *1.609 converts miles to km
+Distance_Car_UK <- rlnorm(100000, meanlog = 1.11, sdlog = 1.01)*1.609344
+Distance_Bus_UK <- rlnorm(100000, meanlog = 1.06, sdlog = 0.82)*1.609344
+Distance_Bike_UK <- rlnorm(100000, meanlog = 1.16, sdlog = 2.19)*1.609344
+
+GHGperKm_Walk <- 0
+GHGperKm_Car_UK <- rlnorm(100000, meanlog = -2.08, sdlog = 0.20)+ GHG_Car_Prod_Maintain
+GHGperKm_Bus_UK <- rlnorm(100000, meanlog = -2.27, sdlog = 0.28)
+GHGperKm_Bike <- 0
+
+Trip_Allocation <- rep(1,100000)
+Trip_Allocation_TC <- runif(100000, 0,1)
+
+GHG_Per_Trip_BM_UK <- rep(999,100000)
+GHG_Per_Trip_BM_UK_TC <-  rep(999,100000) # TC: Trip Chaining
+
+BS_UK <- rep(999,100000) 
+
+for (i in 1:100000){
+  if(Mode_UK[i]== 1){
+    BS_UK[i] <- floor(rpert(1,1,5,15))
+    GHG_Per_Trip_BM_UK[i] <- Distance_Walk_UK[i]*2*GHGperKm_Walk
+    GHG_Per_Trip_BM_UK_TC[i] <- GHG_Per_Trip_BM_UK[i]
+  } else if (Mode_UK[i]== 2){
+    BS_UK[i] <- floor(rpert(1,1,30,70))
+    GHG_Per_Trip_BM_UK[i] <- Distance_Car_UK[i]*2*GHGperKm_Car_UK[i]*Trip_Allocation[i]
+    GHG_Per_Trip_BM_UK_TC[i] <- Distance_Car_UK[i]*2*GHGperKm_Car_UK[i]*Trip_Allocation_TC[i] # TC: Trip Chaining
+  } else if (Mode_UK[i]== 3){
+    BS_UK[i] <- floor(rpert(1,1,10,20))
+    GHG_Per_Trip_BM_UK[i] <- Distance_Bus_UK[i]*2*GHGperKm_Bus_UK[i]
+    GHG_Per_Trip_BM_UK_TC[i] <- GHG_Per_Trip_BM_UK[i]
+  } else {
+    BS_UK[i] <- floor(rpert(1,1,5,15))
+    GHG_Per_Trip_BM_UK[i] <- Distance_Bike_UK[i]*2*GHGperKm_Bike
+    GHG_Per_Trip_BM_UK_TC[i] <- GHG_Per_Trip_BM_UK[i]
+  }
+  
+}
+Median_BM_UK<- median(GHG_Per_Trip_BM_UK) 
+Median_BM_UK_TC<- median(GHG_Per_Trip_BM_UK_TC) 
+
+
+
+############################ Bricks & Mortar US #################################
+
+Mode_US <- c(rep(1,5000),rep(2,94000), rep(3,1000))   #1: Walk, 2: Car/van, 3: Bus
+Mode_US <- sample(Mode_US, 100000, replace = FALSE, prob = NULL)
+
+Distance_Walk_US <- rlnorm(100000, meanlog = -1.37, sdlog = 0.85)*1.609344
+Distance_Car_US <- rlnorm(100000, meanlog = 1.10, sdlog = 1.15)*1.609344
+Distance_Bus_US <- rlnorm(100000, meanlog = 1.20, sdlog = 0.79)*1.609344
+
+GHGperKm_Walk <- 0
+GHGperKm_Car_US <- rlnorm(100000, meanlog = -1.59, sdlog = 0.21)+GHG_Car_Prod_Maintain
+GHGperKm_Bus_US <- rlnorm(100000, meanlog = -2.27, sdlog = 0.27)
+GHGperKm_Bike <- 0
+
+GHG_Per_Trip_BM_US <- rep(0,100000)
+GHG_Per_Trip_BM_US_TC <- rep(0,100000)
+
+BS_US <- rep(0,100000) 
+
+for (i in 1:100000){
+  if(Mode_US[i]== 1){
+    BS_US[i] <- floor(rpert(1,1,5,15))
+    GHG_Per_Trip_BM_US[i] <- Distance_Walk_US[i]*2*GHGperKm_Walk
+    GHG_Per_Trip_BM_US_TC[i] <- GHG_Per_Trip_BM_US[i] 
+  } else if (Mode_US[i]== 2){
+    BS_US[i] <- floor(rpert(1,1,30,70))
+    GHG_Per_Trip_BM_US[i] <- Distance_Car_US[i]*2*GHGperKm_Car_US[i]*Trip_Allocation[i]
+    GHG_Per_Trip_BM_US_TC[i] <- Distance_Car_US[i]*2*GHGperKm_Car_US[i]*Trip_Allocation_TC[i]   # TC: Trip Chaining
+  } else {
+    BS_US[i] <- floor(rpert(1,1,10,20))
+    GHG_Per_Trip_BM_US[i] <- Distance_Bus_US[i]*2*GHGperKm_Bus_US[i]
+    GHG_Per_Trip_BM_US_TC[i] <- GHG_Per_Trip_BM_US[i]
+  }
+  
+}
+Median_BM_US<- median(GHG_Per_Trip_BM_US) 
+Median_BM_US_TC<- median(GHG_Per_Trip_BM_US_TC) 
+
+
+
+############################ Bricks & Mortar NL #################################
+
+Mode_NL <- c(rep(1,17172),rep(2,44444), rep(3,7071),rep(4,31313))   #1: Walk, 2: Car/van, 3: Bus/tram/metro, 4: Bike
+Mode_NL <- sample(Mode_NL, 100000, replace = FALSE, prob = NULL)
+
+Distance_Walk_NL <- rlnorm(100000, meanlog = -0.89, sdlog = 0.91)
+Distance_Car_NL <- rlnorm(100000, meanlog = 1.25, sdlog = 1.28)
+Distance_Bus_NL <- rlnorm(100000, meanlog = 1.82, sdlog = 1.06)
+Distance_Bike_NL <- rlnorm(100000, meanlog = 0.29, sdlog = 0.92)
+Distance_Scooter_NL <- rlnorm(100000, meanlog = 0.43, sdlog = 1.02)
+
+GHGperKm_Walk <- 0
+GHGperKm_Car_NL <- rlnorm(100000, meanlog = -2.07, sdlog = 0.26) + GHG_Car_Prod_Maintain
+GHGperKm_Bus_NL <- rlnorm(100000, meanlog = -2.25, sdlog = 0.19)
+GHGperKm_Bike <- 0
+#GHGperKm_Scooter <- 0.085 
+
+
+GHG_Per_Trip_BM_NL <- rep(0,100000)
+GHG_Per_Trip_BM_NL_TC <- rep(0,100000)
+
+BS_NL <- rep(0,100000)
+
+for (i in 1:100000){
+  if(Mode_NL[i]== 1){
+    BS_NL[i] <- floor(rpert(1,1,5,15))
+    GHG_Per_Trip_BM_NL[i] <- Distance_Walk_NL[i]*2*GHGperKm_Walk   
+    GHG_Per_Trip_BM_NL_TC[i] <- GHG_Per_Trip_BM_NL[i] 
+  } else if (Mode_NL[i]== 2){
+    BS_NL[i] <- floor(rpert(1,1,30,70))
+    GHG_Per_Trip_BM_NL[i] <- Distance_Car_NL[i]*2*GHGperKm_Car_NL[i]*Trip_Allocation[i]
+    GHG_Per_Trip_BM_NL_TC[i] <- Distance_Car_NL[i]*2*GHGperKm_Car_NL[i]*Trip_Allocation_TC[i]
+  } else if (Mode_NL[i]== 3){
+    BS_NL[i] <- floor(rpert(1,1,10,20))
+    GHG_Per_Trip_BM_NL[i] <- Distance_Bus_NL[i]*2*GHGperKm_Bus_NL[i]
+    GHG_Per_Trip_BM_NL_TC[i] <- GHG_Per_Trip_BM_NL[i]
+  } else {
+    BS_NL[i] <- floor(rpert(1,1,5,15))
+    GHG_Per_Trip_BM_NL[i] <- Distance_Bike_NL[i]*2*GHGperKm_Bike 
+    GHG_Per_Trip_BM_NL_TC[i] <- GHG_Per_Trip_BM_NL[i]
+  }
+  
+}
+Median_BM_NL<- median(GHG_Per_Trip_BM_NL)
+Median_BM_NL_TC<- median(GHG_Per_Trip_BM_NL_TC)
+
+
+
+
+############################ Bricks&Mortar China #################################
+
+Mode_CN <- c(rep(1,58350),rep(2,8330), rep(3,3120),rep(4,30200))   #1: Walk, 2: Car/van, 3: Bus, 4: Bike
+Mode_CN <- sample(Mode_CN, 100000, replace = FALSE, prob = NULL)
+
+BS_CN <- rep(0,100000) # Basket size
+
+Distance_Walk_CN <- rlnorm(100000, meanlog = -0.51, sdlog = 0.62)
+Distance_Car_CN <- rlnorm(100000, meanlog = 0.60, sdlog = 1.01)
+Distance_Bus_CN <- rlnorm(100000, meanlog = 0.58, sdlog = 0.89)
+Distance_Bike_CN <- rlnorm(100000, meanlog = -0.10, sdlog = 0.79)
+
+GHGperKm_Walk <- 0
+GHGperKm_Car_CN <- rlnorm(100000, meanlog = -1.88, sdlog = 0.16)+GHG_Car_Prod_Maintain
+GHGperKm_Bus_CN <- rlnorm(100000, meanlog = -2.24, sdlog = 0.14)
+GHGperKm_Bike <- 0
+
+GHG_Per_Trip_BM_CN <- rep(0,100000)
+GHG_Per_Trip_BM_CN_TC <- rep(0,100000)
+
+
+
+for (i in 1:100000){
+  
+  
+  if(Mode_CN[i]== 1){
+    BS_CN[i] <- floor(rpert(1,1,5,15))
+    GHG_Per_Trip_BM_CN[i] <- Distance_Walk_CN[i]*2*GHGperKm_Walk
+    GHG_Per_Trip_BM_CN_TC[i] <- GHG_Per_Trip_BM_CN[i]
+  } else if (Mode_CN[i]== 2){
+    BS_CN[i] <- floor(rpert(1,1,30,70))
+    GHG_Per_Trip_BM_CN[i] <- Distance_Car_CN[i]*2*GHGperKm_Car_CN[i]*Trip_Allocation[i]
+    GHG_Per_Trip_BM_CN_TC[i] <- Distance_Car_CN[i]*2*GHGperKm_Car_CN[i]*Trip_Allocation_TC[i]
+  } else if (Mode_CN[i]== 3){
+    BS_CN[i] <- floor(rpert(1,1,10,20))
+    GHG_Per_Trip_BM_CN[i] <- Distance_Bus_CN[i]*2*GHGperKm_Bus_CN[i]
+    GHG_Per_Trip_BM_CN_TC[i] <- GHG_Per_Trip_BM_CN[i]
+  } else {
+    BS_CN[i] <- floor(rpert(1,1,5,15))
+    GHG_Per_Trip_BM_CN[i] <- Distance_Bike_CN[i]*2*GHGperKm_Bike
+    GHG_Per_Trip_BM_CN_TC[i] <- GHG_Per_Trip_BM_CN[i]
+  }
+  
+}
+
+Median_BM_CN<- median(GHG_Per_Trip_BM_CN)
+Median_BM_CN_TC<- median(GHG_Per_Trip_BM_CN_TC)
+
+
+
+################### Warehousing and Storage ###################
+
+####### Manufcturer Warehouse
+
+Elec_Manuf_Warehouse <- rlnorm(100000, meanlog = .99, sdlog = .4)  #kWh/m3.year
+Gas_Manuf_Warehouse <- rlnorm(100000, meanlog = 1.0, sdlog = .74)  #kWh/m3.year
+
+Storage_time_Manuf_Warehouse <- rpert(100000,1,15,30)
+Storage_Factore_Warehouse <- runif(100000, .22, .27)
+
+GHG_Electricty_Manuf_Warehouse_peritem <- ((Elec_Manuf_Warehouse * Storage_time_Manuf_Warehouse * 0.832)/(365*(Storage_Factore_Warehouse/(Item_Volume/1000))))
+GHG_Gas_Manuf_Warehouse_peritem <- ((Gas_Manuf_Warehouse * Storage_time_Manuf_Warehouse* 0.160)/(365*(Storage_Factore_Warehouse/(Item_Volume/1000)))) 
+
+GHG_Manuf_Warehouse <- GHG_Electricty_Manuf_Warehouse_peritem + GHG_Gas_Manuf_Warehouse_peritem  
+
+Total_GHG_Manuf_Warehouse <- rep(999,100000)
+Total_GHG_Manuf_Warehouse_PP <- rep(999,100000)
+Total_GHG_Manuf_Warehouse_BC <- rep(999,100000)
+
+####### Attention: Long Run #############
+
+for (i in 1:100000){
+  Total_GHG_Manuf_Warehouse[i] <- sum(sample(GHG_Manuf_Warehouse,BS_UK[i], replace = FALSE, prob = NULL))
+  Total_GHG_Manuf_Warehouse_PP[i] <- sum(sample(GHG_Manuf_Warehouse,BS_PP[i], replace = FALSE, prob = NULL))
+  Total_GHG_Manuf_Warehouse_BC[i] <- sum(sample(GHG_Manuf_Warehouse,BS_BC[i], replace = FALSE, prob = NULL))
+}
+
+
+
+####### DC Warehouse
+
+Elec_DC_Warehouse <- rpert(100000,5,63,309)  #kWh/m2.year
+Gas_DC_Warehouse <- rpert(100000,6,52,394)  #MJ/m2.year
+
+Storage_time_DC_Warehouse <- rpert(100000,1,15,30)
+Storage_Factore_DC_Warehouse <- runif(100000, .22, .27)
+
+Height_Warehouse <- rpert(100000,2.4,6.1,12.2) 
+GHG_Electricty_DC_Warehouse_peritem <- ((Elec_DC_Warehouse * Storage_time_DC_Warehouse)/((Storage_Factore_DC_Warehouse/(Item_Volume/1000)*365*Height_Warehouse)) * 0.832)
+GHG_Gas_DC_Warehouse_peritem <- ((Gas_DC_Warehouse * Storage_time_DC_Warehouse)/((Storage_Factore_DC_Warehouse/(Item_Volume/1000)*365*Height_Warehouse)) * 0.0444) 
+
+
+
+GHG_DC_Warehouse<- GHG_Electricty_DC_Warehouse_peritem + GHG_Gas_DC_Warehouse_peritem
+
+Total_GHG_DC_Warehouse <- rep(999,100000)
+Total_GHG_DC_Warehouse_PP <- rep(999,100000)
+Total_GHG_DC_Warehouse_BC <- rep(999,100000)
+for (i in 1:100000){
+  Total_GHG_DC_Warehouse[i] <- sum(sample(GHG_DC_Warehouse,BS_UK[i], replace = FALSE, prob = NULL))
+  Total_GHG_DC_Warehouse_PP[i] <- sum(sample(GHG_DC_Warehouse,BS_PP[i], replace = FALSE, prob = NULL))
+  Total_GHG_DC_Warehouse_BC[i] <- sum(sample(GHG_DC_Warehouse,BS_BC[i], replace = FALSE, prob = NULL))
+}
+
+
+####### DC Parcel Network
+
+Elec_DC_ParcNet <- rpert(100000,5,63,309)  #kWh/m2.year
+Gas_DC_ParcNet <- rpert(100000,6,52,394)  #MJ/m2.year
+
+Storage_time_DC_ParcNet <- rpert(100000,.5,1,2)
+Storage_Factore_ParcNet <- runif(100000, .22, .27)
+
+Electricty_DC_ParcNet_peritem <- ((Elec_DC_ParcNet * Storage_time_DC_ParcNet * 0.832)/(365* Height_Warehouse * (Storage_Factore_ParcNet/(Item_Volume/1000))))
+Gas_DC_ParcNet_peritem <- (( Gas_DC_ParcNet * Storage_time_DC_ParcNet * 0.0444)/(365*Height_Warehouse*(Storage_Factore_ParcNet/(Item_Volume/1000)))) 
+
+GHG_ParceNet_peritem <- Electricty_DC_ParcNet_peritem + Gas_DC_ParcNet_peritem
+
+Total_GHG_ParceNet <- rep(999,100000)
+
+### Attention !!!! LONG RUN
+for (i in 1:100000){
+  Total_GHG_ParceNet[i] <- sum(sample(GHG_ParceNet_peritem,BS_UK[i], replace = FALSE, prob = NULL))   
+}
+
+
+
+####### Retailer
+
+Elec_Retailer <- rlnorm(100000, meanlog = 4.74, sdlog = .88)  #kWh/m2.year
+Gas_Retailer <- rlnorm(100000, meanlog = 5.27, sdlog = 1.10)   #MJ/m2.year
+
+Storage_time_Retailer <- rpert(100000,1,28,60)
+Storage_Factore_Retailer <- runif(100000, .22, .27)
+
+
+Electricty_Retailer_peritem <- ((Elec_Retailer * Storage_time_Retailer)/((Storage_Factore_Retailer/(Item_Volume/1000)*365*2)) * 0.832)
+Gas_Retailer_peritem <- ((Gas_Retailer * Storage_time_Retailer)/((Storage_Factore_Retailer/(Item_Volume/1000)*365*2)) * 0.0444) 
+
+
+GHG_Retailer <- Electricty_Retailer_peritem + Gas_Retailer_peritem
+
+Total_GHG_Retailer <- rep(999,100000)
+Total_GHG_Retailer_BC <- rep(999,100000)  
+
+###### ### Attention !!!! LONG RUN
+for (i in 1:100000){
+  Total_GHG_Retailer[i] <- sum(sample(GHG_Retailer,BS_UK[i], replace = FALSE, prob = NULL))  
+  Total_GHG_Retailer_BC[i] <- sum(sample(GHG_Retailer,BS_BC[i], replace = FALSE, prob = NULL))  
+}
+
+
+
+################# Primary Transport (Unilever UK Data) #################
+#install.packages("mc2d")
+library(mc2d)
+
+
+Primary_Transport_Mode <- c(rep(1,91000), rep(2,9000)) # 1 for Truck, 2 for Train
+Primary_Transport_Mode <- sample(Primary_Transport_Mode, 100000, replace = FALSE, prob = NULL)
+
+Distance_PTransport_Truck <- rlnorm(100000, meanlog = 5.06, sdlog = 1.12)
+Distance_PTransport_Train <- rpert(100000, 28,492, 1791)
+
+GHG_Per_Trip_PTransport <- rep(999,100000)
+GHG_Per_Item_PTransport <- rep(999,100000)
+
+for (i in 1:100000){
+  if (Primary_Transport_Mode[i] == 1){
+    GHG_Per_Item_PTransport[i] <- Distance_PTransport_Truck[i]*(Product_Weight[i]/1000)*0.114
+  
+  } else {
+    GHG_Per_Item_PTransport[i] <- Distance_PTransport_Train[i]*(Product_Weight[i]/1000)*0.042
+    
+  }
+  
+}
+
+Ship_PTransport <- c(rep(1,27000), rep(0,73000))
+Ship_PTransport <- sample(Ship_PTransport, 100000, replace = FALSE, prob = NULL)
+
+Distance_PTransport_Ship <- rlnorm(100000, meanlog = 5.93, sdlog = 0.83)  
+Additional_GHG_Ship_PTransport <- rep(999,100000)
+
+for (i in 1:100000){
+  if (Primary_Transport_Mode[i] == 1 & Ship_PTransport[i] ==1){
+    Additional_GHG_Ship_PTransport[i] <- Distance_PTransport_Ship[i]*(Product_Weight[i]/1000)*0.011
+  } else { Additional_GHG_Ship_PTransport[i] <- 0
+  }
+}
+
+Total_GHG_PTransport_Item <- GHG_Per_Item_PTransport + Additional_GHG_Ship_PTransport
+
+Total_GHG_PTransport_BS <- rep(999,100000)
+Total_GHG_PTransport_BS_PP <- rep(999,100000)
+Total_GHG_PTransport_BS_BC <- rep(999,100000)
+
+for (i in 1:100000){
+  Total_GHG_PTransport_BS[i] <- sum(sample(Total_GHG_PTransport_Item, BS_UK[i],replace = FALSE, prob = NULL))
+  Total_GHG_PTransport_BS_PP[i] <- sum(sample(Total_GHG_PTransport_Item, BS_PP[i],replace = FALSE, prob = NULL))
+  Total_GHG_PTransport_BS_BC[i] <- sum(sample(Total_GHG_PTransport_Item, BS_BC[i],replace = FALSE, prob = NULL))
+}
+
+  
+
+############# Secondary Transport ###############
+
+Distance_STransport_Truck <- rlnorm(100000, meanlog = 5.09, sdlog = 0.5)
+Ship_STransport <- c(rep(1,6000), rep(0,94000))
+Ship_STransport <- sample(Ship_STransport, 100000, replace = FALSE, prob = NULL)
+Distance_STransport_Ship <- rep(219,100000)
+
+GHG_Per_Item_STransport <- rep(999,100000)
+Additional_GHG_Ship_STransport <- rep(999,100000) 
+
+for (i in 1:100000){
+  GHG_Per_Item_STransport[i] <- Distance_STransport_Truck[i] * 0.114*(Product_Weight[i]/1000)
+  if (Ship_STransport[i] ==1){
+    Additional_GHG_Ship_STransport[i] <- Distance_STransport_Ship[i]*0.011*(Product_Weight[i]/1000)
+  } else { Additional_GHG_Ship_STransport[i] <- 0
+  }
+}
+
+Total_GHG_STransport_Item <- GHG_Per_Item_STransport + Additional_GHG_Ship_STransport
+
+Total_GHG_STransport_BS <- rep(999,100000)
+Total_GHG_STransport_BS_PP <- rep(999,100000)
+Total_GHG_STransport_BS_BC <- rep(999,100000)
+for (i in 1:100000){
+  Total_GHG_STransport_BS[i] <- sum(sample(Total_GHG_STransport_Item, BS_UK[i],replace = FALSE, prob = NULL))
+  Total_GHG_STransport_BS_PP[i] <- sum(sample(Total_GHG_STransport_Item, BS_PP[i],replace = FALSE, prob = NULL))
+  Total_GHG_STransport_BS_BC[i] <- sum(sample(Total_GHG_STransport_Item, BS_BC[i],replace = FALSE, prob = NULL))
+}
+
+
+################ Tertiary Transport (UK Data)#################### 
+Distance_Distribution <- c(runif(2000,10,25),runif(6000,25,50),runif(15000,50,100), runif(15000,100,150), runif(18000,150,200), runif(25000,200,300), runif(19000,300,500))
+Distance_Distribution <- sample(Distance_Distribution, 100000, replace = FALSE, prob = NULL)
+Distance_Distribution_Cat <- Distance_Distribution
+Distance_Distribution_Cat[Distance_Distribution_Cat<=25] <- 1
+Distance_Distribution_Cat[Distance_Distribution_Cat>25 & Distance_Distribution_Cat<=50] <- 2
+Distance_Distribution_Cat[Distance_Distribution_Cat>50 & Distance_Distribution_Cat<=100] <- 3
+Distance_Distribution_Cat[Distance_Distribution_Cat>100 & Distance_Distribution_Cat<=150] <- 4
+Distance_Distribution_Cat[Distance_Distribution_Cat>150 & Distance_Distribution_Cat<=200] <- 5
+Distance_Distribution_Cat[Distance_Distribution_Cat>200 & Distance_Distribution_Cat<=300] <- 6
+Distance_Distribution_Cat[Distance_Distribution_Cat>300] <- 7
+
+
+Vehilce_type_Cat <- matrix(0, ncol = 7, nrow = 100000)
+Vehilce_type_Cat[,1] <- c(rep(0.74,600),rep(0.30,300), rep(0.23,900), rep(0.11,4600), rep(0.50,100), rep(0.11,3500)) 
+Vehilce_type_Cat[,2] <- c(rep(0.74,400),rep(0.30,300), rep(0.23,700), rep(0.11,4200), rep(0.50,200), rep(0.11,4200)) 
+Vehilce_type_Cat[,3] <- c(rep(0.74,300),rep(0.30,200), rep(0.23,600), rep(0.11,2700), rep(0.50,200), rep(0.11,6000)) 
+Vehilce_type_Cat[,4] <- c(rep(0.74,200),rep(0.30,100), rep(0.23,500), rep(0.11,1300), rep(0.50,300), rep(0.11,7600)) 
+Vehilce_type_Cat[,5] <- c(rep(0.74,100),rep(0.30,100), rep(0.23,400), rep(0.11,900), rep(0.50,400), rep(0.11,8100)) 
+Vehilce_type_Cat[,6] <- c(rep(0.74,100),rep(0.30,100), rep(0.23,400), rep(0.11,600), rep(0.50,300), rep(0.11,8500)) 
+Vehilce_type_Cat[,7] <- c(rep(0.74,50),rep(0.30,50), rep(0.23,200), rep(0.11,900), rep(0.50,200), rep(0.11,8600)) 
+
+# Reshuffle the matrix 
+for (i in 1:7) {
+  Vehilce_type_Cat[,i] <- sample( Vehilce_type_Cat[,i], 100000, replace = FALSE, prob = NULL)
+}
+
+
+GHG_Per_Item_TerTransport <- rep(999,100000)
+
+
+for (j in 1:100000) {
+  if (Distance_Distribution_Cat[j] == 1){
+    GHG_Per_Item_TerTransport[j] <-  Distance_Distribution[j] * Vehilce_type_Cat[j,1]*(Product_Weight[j]/1000)
+   
+  } else if (Distance_Distribution_Cat[j] == 2){
+    GHG_Per_Item_TerTransport[j] <-  Distance_Distribution[j] * Vehilce_type_Cat[j,2]*(Product_Weight[j]/1000)
+   
+  } else if (Distance_Distribution_Cat[j] == 3){
+    GHG_Per_Item_TerTransport[j] <- Distance_Distribution[j] * Vehilce_type_Cat[j,3]*(Product_Weight[j]/1000)
+    
+  } else if (Distance_Distribution_Cat[j] == 4){
+    GHG_Per_Item_TerTransport[j] <- Distance_Distribution[j] * Vehilce_type_Cat[j,4]*(Product_Weight[j]/1000)
+    
+  } else if (Distance_Distribution_Cat[j] == 5){
+    GHG_Per_Item_TerTransport[j] <-  Distance_Distribution[j] * Vehilce_type_Cat[j,5]*(Product_Weight[j]/1000)
+  
+  } else if (Distance_Distribution_Cat[j] == 6){
+    GHG_Per_Item_TerTransport[j] <-  Distance_Distribution[j] * Vehilce_type_Cat[j,6]*(Product_Weight[j]/1000)
+   
+  } else {
+    GHG_Per_Item_TerTransport[j] <-  Distance_Distribution[j] * Vehilce_type_Cat[j,7]*(Product_Weight[j]/1000)
+   
+  }
+}
+
+
+Total_GHG_TerTransport_BS <- rep(999,100000)
+Total_GHG_TerTransport_BS_PP <- rep(999,100000)
+Total_GHG_TerTransport_BS_BC <- rep(999,100000)
+for (i in 1:100000){
+  Total_GHG_TerTransport_BS[i] <- sum(sample(GHG_Per_Item_TerTransport, BS_UK[i],replace = FALSE, prob = NULL))
+  Total_GHG_TerTransport_BS_PP[i] <- sum(sample(GHG_Per_Item_TerTransport, BS_PP[i],replace = FALSE, prob = NULL))
+  Total_GHG_TerTransport_BS_BC[i] <- sum(sample(GHG_Per_Item_TerTransport, BS_BC[i],replace = FALSE, prob = NULL))
+}
+
+########################### Total Footprints PP ########################
+
+
+quantile(GHG_per_Drop,probs = c(.05,.5,.95))
+
+Total_GHG_Per_Item_SR <- (Total_GHG_per_Drop + Total_GHG_Packaging_PP2 + 
+                            Total_GHG_Manuf_Warehouse_PP + Total_GHG_DC_Warehouse_PP + Total_GHG_ParceNet +
+                            Total_GHG_PTransport_BS_PP + Total_GHG_STransport_BS_PP + Total_GHG_TerTransport_BS_PP)/BS_PP
+
+
+
+
+
+
+########## Total Footprints Bricks and Clicks ################
+
+Total_GHG_Footprints_BC <- (Total_LM_GHG_BC_perDrop + Total_GHG_DC_Warehouse_BC +  Total_GHG_DC_Warehouse_BC + 
+                              Total_GHG_PTransport_BS_BC + Total_GHG_STransport_BS_BC + Total_GHG_TerTransport_BS_BC )/BS_BC
+
+
+
+
+
+################## Total Footprints UK ###############
+
+Total_GHG_Footprints_UK <- (GHG_Per_Trip_BM_UK + Total_GHG_Manuf_Warehouse +  Total_GHG_DC_Warehouse + Total_GHG_Retailer +
+                              Total_GHG_PTransport_BS + Total_GHG_STransport_BS + Total_GHG_TerTransport_BS)/BS_UK
+
+
+GHG_By_Mode_UK <- data.frame(Mode = Mode_UK, GHG = Total_GHG_Footprints_UK)
+GHG_By_Mode_Car_UK <- GHG_By_Mode_UK[GHG_By_Mode_UK$Mode == 2,]
+GHG_By_Mode_Pub_UK <- GHG_By_Mode_UK[GHG_By_Mode_UK$Mode == 3,]
+GHG_By_Mode_WalkBike_UK <- GHG_By_Mode_UK[GHG_By_Mode_UK$Mode == 1 | GHG_By_Mode_UK$Mode == 4,]
+
+end_time <- Sys.time()
+
+###################################### Figures ###############################
+
+f <- function(x) {
+  r <- quantile(x, probs = c(0.05, 0.25, 0.5, 0.75, 0.95))
+  names(r) <- c("ymin", "lower", "middle", "upper", "ymax")
+  r
+}
+
+
+#install.packages("ggplot2")
+library(ggplot2)
+library(cowplot)
+
+Data4Figure1 <- data.frame(Channel = rep(c("Bricks & Mortar (UK)","Bricks & Clicks ","Pure Players"), c(400000,400000,500000)),
+                            Phase= rep(c("Total","Last Mile Transport","Storage","Upstream Transport"," Total"," Last Mile Transport"," Storage"," Upstream Transport","  Total","  Last Mile Transport","Packaging", "  Storage", "  Upstream Transport"),
+                                       each = 100000),
+                            GHG = c(Total_GHG_Footprints_UK, GHG_Per_Trip_BM_UK/BS_UK,
+                                    (Total_GHG_Manuf_Warehouse +Total_GHG_DC_Warehouse + Total_GHG_Retailer)/BS_UK,
+                                    (Total_GHG_PTransport_BS + Total_GHG_STransport_BS + Total_GHG_TerTransport_BS)/BS_UK,
+                                    Total_GHG_Footprints_BC,Total_LM_GHG_BC_perDrop/BS_BC,
+                                    (Total_GHG_Manuf_Warehouse_BC +Total_GHG_DC_Warehouse_BC)/BS_BC,
+                                    (Total_GHG_PTransport_BS_BC + Total_GHG_STransport_BS_BC + Total_GHG_TerTransport_BS_BC)/BS_BC,
+                                    Total_GHG_Per_Item_SR,Total_GHG_per_Drop/BS_PP,
+                                   Total_GHG_Packaging_PP2/BS_PP,
+                                    (Total_GHG_Manuf_Warehouse_PP + Total_GHG_DC_Warehouse_PP + Total_GHG_ParceNet)/BS_PP,
+                                    (Total_GHG_PTransport_BS_PP + Total_GHG_STransport_BS_PP + Total_GHG_TerTransport_BS_PP)/BS_PP),
+                            Colour = rep(c("Black","Red","Brown", "Blue","Black","Red","Brown", "Blue","Black", "Red", "Yellow", "Brown", "Blue"),each = 100000))
+                  
+                                    
+Data4Figure1$Phase <- factor(Data4Figure1$Phase,
+                             levels = c("Total","Upstream Transport","Storage","Last Mile Transport"," Total", " Upstream Transport", " Storage", " Last Mile Transport","  Total","  Upstream Transport","  Storage", "Packaging" ,"  Last Mile Transport"),ordered = FALSE)
+
+Data4Figure1$Channel <- factor(Data4Figure1$Channel,
+                              levels = c("Bricks & Mortar (UK)","Bricks & Clicks ","Pure Players"),ordered = FALSE)
+
+Figure1<- ggplot(Data4Figure1,aes(x=Phase, y=GHG, fill = Colour)) + 
+  stat_summary(fun.data=f,geom='boxplot',size=1.3, alpha=.3) +
+  facet_grid(~Channel,scale = "free_x", space= "free" )+
+  #ggtitle('Emissions per Item by Phase') +
+  #scale_y_continuous(name = "KgCO2-eq per item") +
+  labs(y = expression(paste("GHG emissions (kg CO"[2], "-eq per item)"))) +
+  coord_cartesian(ylim = c(0, 0.6))+ 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), plot.title = element_text(size = 20, face = "bold"),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"),legend.position="none",axis.title.x=element_blank(),
+        axis.text.x = element_text(angle = 90, face="bold", color='black', size=18, hjust = 1), axis.title=element_text(size=18, face = "bold"),strip.text.x = element_text(size = 18, face = "bold")) 
+ 
+Figure1
+
+#save_plot('C:/Users/HP/Desktop/Figure1.tiff', plot = Figure1, base_height = 10,base_aspect_ratio = 1.1, base_width = 10)
+
+#install.packages("EnvStats")
+#library (EnvStats)
+
+
+PerParcel_PP <- Data4Figure1 %>%
+  filter (Channel == "Pure Players") %>%
+  filter (Phase == "  Total")
+
+# Last Mile
+quantile(GHG_Per_Trip_BM_UK/BS_UK, probs = c(.05,.5,.95))
+quantile(Total_LM_GHG_BC_perDrop/BS_BC, probs = c(.05,.5,.95))
+quantile(Total_GHG_per_Drop/BS_PP, probs = c(.05,.5,.95))
+
+quantile( Total_GHG_Packaging_PP2/BS_PP, probs = c(.05,.5,.95))
+
+# Total
+quantile( Total_GHG_Footprints_UK, probs = c(.05,.5,.95))
+quantile( Total_GHG_Footprints_BC, probs = c(.05,.5,.95))
+quantile( Total_GHG_Per_Item_SR, probs = c(.05,.5,.95))
+
+summary(BS_BC)
+Compareison_BC <- data.frame (Total_GHG_Footprints_BC,BS_BC)
+BC_30plus <- Compareison_BC$Total_GHG_Footprints_BC[Compareison_BC$BS_BC >= 30]
+BC_10L <- Compareison_BC$Total_GHG_Footprints_BC[Compareison_BC$BS_BC <= 10]
+summary(BC_30plus)
+summary(BC_10L)
+
+
+summary(BS_PP)
+Compareison_PP <- data.frame (Total_GHG_Per_Item_SR,BS_PP)
+PP_3plus <- Compareison_PP$Total_GHG_Per_Item_SR[Compareison_PP$BS_PP >= 3]
+PP_1 <- Compareison_PP$Total_GHG_Per_Item_SR[Compareison_PP$BS_PP == 1]
+summary(PP_3plus)
+summary(PP_1)
+
+
+# Warehouse
+quantile((Total_GHG_Manuf_Warehouse_PP + Total_GHG_DC_Warehouse_PP + Total_GHG_ParceNet)/BS_PP, probs = c(.05,.5,.95))
+
+# upstream Transport
+quantile( (Total_GHG_PTransport_BS + Total_GHG_STransport_BS + Total_GHG_TerTransport_BS)/BS_UK, probs = c(.05,.5,.95))
+quantile((Total_GHG_PTransport_BS_BC + Total_GHG_STransport_BS_BC + Total_GHG_TerTransport_BS_BC)/BS_BC,probs = c(.05,.5,.95))
+quantile((Total_GHG_PTransport_BS_PP + Total_GHG_STransport_BS_PP + Total_GHG_TerTransport_BS_PP)/BS_PP,probs = c(.05,.5,.95))
+
+
+
+summary( (Total_GHG_PTransport_BS + Total_GHG_STransport_BS + Total_GHG_TerTransport_BS)/BS_UK)
+summary( (Total_GHG_PTransport_BS_BC + Total_GHG_STransport_BS_BC + Total_GHG_TerTransport_BS_BC)/BS_BC)
+summary((Total_GHG_PTransport_BS_PP + Total_GHG_STransport_BS_PP + Total_GHG_TerTransport_BS_PP/BS_PP))
+
+
+### Graphical abstract
+Data4GA <- data.frame(Channel = rep(c("Online","Traditional"), c(200000,100000)),
+                                       Phase= rep(c("Pure Players","Bricks & Clicks", "Bricks & Mortar"),
+                                                  each = 100000),
+                                       GHG = c(Total_GHG_Per_Item_SR, Total_GHG_Footprints_BC, Total_GHG_Footprints_UK)) 
+                                               
+Data4GA$Channel <- factor(Data4GA$Channel,
+                                levels = c("Traditional","Online"),ordered = FALSE)                                      
+                                      
+
+Figure_GA<- ggplot(Data4GA,aes(x=Phase, y=GHG)) + 
+  stat_summary(fun.data=f,geom='boxplot',size=1.3, alpha=.3) +
+  facet_grid(~Channel,scale = "free_x", space= "free" )+
+  #ggtitle('Emissions per Item by Phase') +
+  #scale_y_continuous(name = "KgCO2-eq per item") +
+  labs(y = expression(paste("GHG emissions (kg CO"[2], "-eq per item)"))) +
+  coord_cartesian(ylim = c(0, 0.6))+ 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), plot.title = element_text(size = 32, face = "bold"),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"),legend.position="none",axis.title.x=element_blank(),axis.title.y=element_text(face="bold", color='black', size=32),
+        axis.text.x = element_text(angle = 45, face="bold", color='black', size=32, hjust = 1),axis.text.y = element_text(face="bold", color='black', size=32),
+        axis.title=element_text(size=32, face = "bold"),strip.text.x = element_text(size = 32, face = "bold")) 
+
+
+Figure_GA
+
+#save_plot('C:/Users/HP/Desktop/Figure_GA.tiff', plot = Figure_GA, base_height = 12,base_aspect_ratio = 1.1, base_width = 7)
+
+
+
+Data4Figure421 <- data.frame( Country= rep(c("United Kingdom","United States","Netherlands","China"), each = 100000),
+                            GHG = c(GHG_Per_Trip_BM_UK/BS_UK, GHG_Per_Trip_BM_US/BS_US, GHG_Per_Trip_BM_NL/BS_NL,GHG_Per_Trip_BM_CN/BS_CN))
+
+
+Data4Figure421$Country <- factor(Data4Figure421$Country,
+                                        levels = c("China","Netherlands","United Kingdom","United States"),ordered = FALSE) 
+
+
+
+Figure421<- ggplot(Data4Figure421,aes(x= Country, y=GHG)) + 
+  stat_summary(fun.data=f,geom='boxplot',width=.8, size= 1.3,alpha=.3) +
+  #facet_grid(~Channel, scale = "free_x",space= "free")+
+  ggtitle('Last Mile Emissions') +
+  scale_y_continuous(breaks = seq(0, .7, 0.1)) +
+  
+  labs(y = expression(paste("GHG emissions (KgCO"[2], "-eq per item)"))) +
+  #ylim(0.0, 0.5)+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"),
+        axis.text.x = element_text(angle = 90,face="bold", color='black', size=24, hjust = 1),axis.title.x =element_blank(),
+        axis.text.y = element_text(face="bold", color='black', size=28),axis.title.y =element_text(face="bold", color='black', size=28, margin = margin(t = 0, r = 20, b = 0, l = 0)),  
+        axis.title=element_text(size=24, face = "bold"),strip.text.x = element_text(size = 22, face = "bold"),
+        plot.title = element_blank()) 
+Figure421
+
+#save_plot('C:/Users/HP/Desktop/Figure421.tiff', plot = Figure421, base_height = 10,base_aspect_ratio = 1.1, base_width = 10)
+
+
+############## Contribution to Variance #####################
+
+#########Anova UK Life cycle
+#install.packages("car")
+library(car)
+my_data_a1 <- data.frame(GHG_UK = log(Total_GHG_Footprints_UK), Mode_UK = factor(Mode_UK),
+                         Mode_PTransport = factor(Primary_Transport_Mode), Ship_PTransport = factor(Ship_PTransport),
+                         Ship_STransport = factor(Ship_STransport), Vehicle_Type = factor(Distance_Distribution_Cat))
+Model1 <- aov(GHG_UK ~ Mode_UK + Mode_PTransport + Ship_PTransport + Ship_STransport +  Vehicle_Type , data = my_data_a1)
+A1 <- Anova(Model1)
+CV_Mode_UK <- A1[1,1]/(A1[1,1]+A1[2,1]+A1[3,1]+A1[4,1]+A1[5,1]+A1[6,1])
+CV_Mode_PTransport_UK <- A1[2,1]/(A1[1,1]+A1[2,1]+A1[3,1]+A1[4,1]+A1[5,1]+A1[6,1]) 
+CV_Ship_PTransport_UK <- A1[3,1]/(A1[1,1]+A1[2,1]+A1[3,1]+A1[4,1]+A1[5,1]+A1[6,1]) 
+CV_Ship_STransport_UK <- A1[4,1]/(A1[1,1]+A1[2,1]+A1[3,1]+A1[4,1]+A1[5,1]+A1[6,1]) 
+CV_Vehicle_Type_UK <- A1[5,1]/(A1[1,1]+A1[2,1]+A1[3,1]+A1[4,1]+A1[5,1]+A1[6,1]) 
+
+
+
+# Test for Homogenousity
+plot(Model1, 1)
+
+# Test for normality
+plot(Model1, 2)
+
+
+######### Spearman's rank correlation analysis UK
+
+Data4C2V <- data.frame(Total_GHG_Footprints_UK, Distance_Car_UK, GHGperKm_Car_UK,Distance_Bus_UK, GHGperKm_Bus_UK, Distance_Bike_UK, Distance_Walk_UK,
+BS_UK, Elec_Manuf_Warehouse, Gas_Manuf_Warehouse,
+Storage_time_Manuf_Warehouse, Storage_Factore_Warehouse, Item_Volume,Product_Weight,Elec_DC_Warehouse,Gas_DC_Warehouse, 
+Storage_time_DC_Warehouse, Elec_Retailer, Gas_Retailer, Storage_time_Retailer, Storage_Factore_DC_Warehouse, Storage_Factore_Retailer, 
+Distance_PTransport_Truck, Distance_PTransport_Train, Distance_PTransport_Ship, Distance_STransport_Truck,Distance_Distribution)
+
+Cor <- rep(999,27)
+for (k in 2:27){
+  A <- cor.test (Data4C2V[,1],Data4C2V[,k],method = "spearman")
+  Cor[k] <- as.numeric(A[4])
+}
+
+Cor <- Cor[2:27]
+SqrCor <- Cor^2
+SumSqrCor <- sum(SqrCor)
+
+C2V <- rep(999,22)
+for (i in 1:26){
+C2V[i] <- SqrCor[i]*100/SumSqrCor
+}
+
+
+
+############# ANOVA PP  LCA
+
+my_data_PP_SR_LCA <- data.frame(GHG_PP_SR = log(Total_GHG_Per_Item_SR), 
+                                 Mode_PTransport = factor(Primary_Transport_Mode), Ship_PTransport = factor(Ship_PTransport),
+                                 Ship_STransport = factor(Ship_STransport), Vehicle_Type = factor(Distance_Distribution_Cat),
+                                 Failed = factor(Filed_Delivery), Redelivery = factor(Failed_n_Redelivered))
+Model_PP_SR <- aov(GHG_PP_SR ~ Mode_PTransport + Ship_PTransport + Ship_STransport +  Vehicle_Type + Failed + Redelivery, data = my_data_PP_SR_LCA)
+
+ANOVA_PP_SR <- Anova(Model_PP_SR)
+
+
+CV_Mode_PTransport_PP_SR <- ANOVA_PP_SR[1,1]/(ANOVA_PP_SR[1,1]+ANOVA_PP_SR[2,1]+ANOVA_PP_SR[3,1]+ANOVA_PP_SR[4,1]+ANOVA_PP_SR[5,1]+ANOVA_PP_SR[6,1]+ANOVA_PP_SR[7,1]) 
+CV_Ship_PTransport_PP_SR <- ANOVA_PP_SR[2,1]/(ANOVA_PP_SR[1,1]+ANOVA_PP_SR[2,1]+ANOVA_PP_SR[3,1]+ANOVA_PP_SR[4,1]+ANOVA_PP_SR[5,1]+ANOVA_PP_SR[6,1]+ANOVA_PP_SR[7,1] ) 
+CV_Ship_STransport_PP_SR <- ANOVA_PP_SR[3,1]/(ANOVA_PP_SR[1,1]+ANOVA_PP_SR[2,1]+ANOVA_PP_SR[3,1]+ANOVA_PP_SR[4,1]+ANOVA_PP_SR[5,1]+ANOVA_PP_SR[6,1]+ANOVA_PP_SR[7,1]) 
+CV_Vehicle_Type_PP_SR <- ANOVA_PP_SR[4,1]/(ANOVA_PP_SR[1,1]+ANOVA_PP_SR[2,1]+ANOVA_PP_SR[3,1]+ANOVA_PP_SR[4,1]+ANOVA_PP_SR[5,1]+ANOVA_PP_SR[6,1]+ANOVA_PP_SR[7,1]) 
+CV_Failed_PP_SR <- ANOVA_PP_SR[5,1]/(ANOVA_PP_SR[1,1]+ANOVA_PP_SR[2,1]+ANOVA_PP_SR[3,1]+ANOVA_PP_SR[4,1]+ANOVA_PP_SR[5,1]+ANOVA_PP_SR[6,1]+ANOVA_PP_SR[7,1])
+CV_Redelivery_PP_SR <- ANOVA_PP_SR[6,1]/(ANOVA_PP_SR[1,1]+ANOVA_PP_SR[2,1]+ANOVA_PP_SR[3,1]+ANOVA_PP_SR[4,1]+ANOVA_PP_SR[5,1]+ANOVA_PP_SR[6,1]+ANOVA_PP_SR[7,1])
+
+
+
+######### Spearman's rank correlation analysis PP 
+
+Data4C2V_PP_SR <- data.frame(Total_GHG_Per_Item_SR, BS_PP, Elec_Manuf_Warehouse, Gas_Manuf_Warehouse,
+                              Storage_time_Manuf_Warehouse, Storage_Factore_Warehouse, Item_Volume,Product_Weight,Elec_DC_Warehouse,Gas_DC_Warehouse, 
+                              Storage_time_DC_Warehouse,Storage_Factore_DC_Warehouse, Elec_DC_ParcNet , Gas_DC_ParcNet, Storage_time_DC_ParcNet, Storage_Factore_ParcNet,
+                              Distance_PTransport_Truck, Distance_PTransport_Train, Distance_PTransport_Ship, Distance_STransport_Truck,Distance_Distribution,
+                              Box_Saturation,LCV_GHG_per_km,Distance_CDP,Stem_Mileage,Drop_Mileage,Deliveries_per_Tour)
+
+Cor_PP_SR <- rep(999,27)
+for (k in 2:27){
+  C <- cor.test (Data4C2V_PP_SR[,1],Data4C2V_PP_SR[,k],method = "spearman")
+  Cor_PP_SR[k] <- as.numeric(C[4])
+}
+
+Cor_PP_SR <- Cor_PP_SR[2:27]
+SqrCor_PP_SR <- Cor_PP_SR^2
+SumSqrCor_PP_SR <- sum(SqrCor_PP_SR)
+
+C2V_PP_SR <- rep(999,26)
+for (i in 1:26){
+  C2V_PP_SR[i] <- SqrCor_PP_SR[i]*100/SumSqrCor_PP_SR
+}
+
+
+############ Anova BC UK
+my_data_BC <- data.frame(GHG_BC = log(Total_GHG_Footprints_BC), 
+                                Mode_PTransport = factor(Primary_Transport_Mode), Ship_PTransport = factor(Ship_PTransport),
+                                Ship_STransport = factor(Ship_STransport))
+                                
+Model_BC <- aov(GHG_BC ~ Mode_PTransport + Ship_PTransport + Ship_STransport, data = my_data_BC)
+
+ANOVA_BC <- Anova(Model_BC)
+
+
+CV_Mode_PTransport_BC <- ANOVA_BC[1,1]/(ANOVA_BC[1,1]+ANOVA_BC[2,1]+ANOVA_BC[3,1]+ANOVA_BC[4,1]) 
+CV_Ship_PTransport_BC <- ANOVA_BC[2,1]/(ANOVA_BC[1,1]+ANOVA_BC[2,1]+ANOVA_BC[3,1]+ANOVA_BC[4,1]) 
+CV_Ship_STransport_BC <- ANOVA_BC[3,1]/(ANOVA_BC[1,1]+ANOVA_BC[2,1]+ANOVA_BC[3,1]+ANOVA_BC[4,1]) 
+
+
+
+######### Spearman's rank correlation analysis BC
+
+Data4C2V_BC<- data.frame(Total_GHG_Footprints_BC, BS_BC, Elec_Manuf_Warehouse, Gas_Manuf_Warehouse,
+                             Storage_time_Manuf_Warehouse, Storage_Factore_Warehouse, Item_Volume,Product_Weight,Elec_DC_Warehouse,Gas_DC_Warehouse, 
+                             Storage_time_DC_Warehouse,Storage_Factore_DC_Warehouse,
+                             Distance_PTransport_Truck, Distance_PTransport_Train, Distance_PTransport_Ship, Distance_STransport_Truck,Distance_Distribution,
+                         LCV_GHG_per_km,Distance_per_delivery_BC)
+
+Cor_PP_BC <- rep(999,19)
+for (k in 2:19){
+  D <- cor.test (Data4C2V_BC[,1],Data4C2V_BC[,k],method = "spearman")
+  Cor_PP_BC[k] <- as.numeric(D[4])
+}
+
+Cor_PP_BC <- Cor_PP_BC[2:19]
+SqrCor_PP_BC <- Cor_PP_BC^2
+SumSqrCor_PP_BC <- sum(SqrCor_PP_BC)
+
+C2V_PP_BC <- rep(999,18)
+for (i in 1:18){
+  C2V_PP_BC[i] <- SqrCor_PP_BC[i]*100/SumSqrCor_PP_BC
+}
+
+
+###### C2v Figure ##########
+
+ Data_C2V <- read.csv("C:/Users/HP/Dropbox/Relief/Paper 3- E-commerce/For_C2V_Figure_LCA.csv")
+ Data_C2V$Channel <- factor(Data_C2V$Channel,
+                             levels = c("Bricks & Mortar","Bricks & Clicks","Pure Players"),ordered = FALSE)
+ 
+ Data_C2V$Variable <- factor(Data_C2V$Variable,
+                            levels = c("Last Mile Travel Distance","Mode of Transport","GHG Emission Intensity of Vehicles","Basket Size",
+                                       "Stem Mileage","Drop Mileage", "Failed Delivery", "Deliveries per tour"),ordered = FALSE)
+
+  Figure3<-ggplot(data=Data_C2V, aes(x=Channel, y=Value, fill=Variable)) +
+  geom_bar(stat="identity")+
+  facet_wrap(~Channel,scales = "free_x")+
+  scale_fill_brewer(palette="Paired")+
+  scale_y_continuous(name = "Contribution to Variance (%)")+
+  scale_x_discrete(name="Country/Scenario") +
+  theme(legend.position="bottom",legend.title = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), 
+        plot.title = element_text(size=20,hjust = 0),text = element_text(size=18, face= "bold"), axis.text=element_text(size=18, face="bold"),
+        axis.text.x = element_blank(),axis.title.x=element_blank(),strip.text.x = element_text(size = 18, face = "bold")) 
+
+Figure3
+
+   
+#save_plot('C:/Users/HP/Desktop/Figure3.tiff', plot = Figure3, base_height = 10,base_aspect_ratio = 1.1, base_width = 13)
+
+BM_BC_Total <- Total_GHG_Footprints_UK - Total_GHG_Footprints_BC
+BM_PP_Total <- Total_GHG_Footprints_UK - Total_GHG_Per_Item_SR
+PP_BC_Total <- Total_GHG_Per_Item_SR - Total_GHG_Footprints_BC
+
+BMUK_BC <- GHG_Per_Trip_BM_UK/BS_UK - Total_LM_GHG_BC_perDrop/BS_BC 
+BMUS_BC <- GHG_Per_Trip_BM_US/BS_US - Total_LM_GHG_BC_perDrop/BS_BC
+BMNL_BC <- GHG_Per_Trip_BM_NL/BS_NL - Total_LM_GHG_BC_perDrop/BS_BC
+BMCN_BC <- GHG_Per_Trip_BM_CN/BS_CN - Total_LM_GHG_BC_perDrop/BS_BC
+
+BMUK_PP <- GHG_Per_Trip_BM_UK/BS_UK - (Total_GHG_per_Drop +Total_GHG_Packaging_PP2)/BS_PP
+BMUS_PP <- GHG_Per_Trip_BM_US/BS_US - (Total_GHG_per_Drop +Total_GHG_Packaging_PP2)/BS_PP
+BMNL_PP <- GHG_Per_Trip_BM_NL/BS_NL - (Total_GHG_per_Drop +Total_GHG_Packaging_PP2)/BS_PP
+BMCN_PP <- GHG_Per_Trip_BM_CN/BS_CN - (Total_GHG_per_Drop +Total_GHG_Packaging_PP2)/BS_PP
+
+# comparing the last mile in B&M
+BM_US_UK <- GHG_Per_Trip_BM_US/BS_US - GHG_Per_Trip_BM_UK/BS_UK
+BM_UK_NL <- GHG_Per_Trip_BM_UK/BS_UK - GHG_Per_Trip_BM_NL/BS_NL
+BM_NL_CN <- GHG_Per_Trip_BM_NL/BS_NL - GHG_Per_Trip_BM_CN/BS_CN 
+
+
+BM_BC_Total <- BM_BC_Total[BM_BC_Total>0]
+BM_PP_Total <- BM_PP_Total[BM_PP_Total>0]
+PP_BC_Total <- PP_BC_Total[PP_BC_Total>0]
+
+BMUK_BC <- BMUK_BC[BMUK_BC>0]
+BMUS_BC <- BMUS_BC[BMUS_BC>0]
+BMNL_BC <- BMNL_BC[BMNL_BC>0]
+BMCN_BC <- BMCN_BC[BMCN_BC>0]
+
+BMUK_PP <- BMUK_PP[BMUK_PP>0]
+BMUS_PP <- BMUS_PP[BMUS_PP>0]
+BMNL_PP <- BMNL_PP[BMNL_PP>0]
+BMCN_PP <- BMCN_PP[BMCN_PP>0]
+
+
+BM_US_UK <- BM_US_UK[BM_US_UK>0]
+BM_UK_NL <- BM_UK_NL[BM_UK_NL>0]
+BM_NL_CN <- BM_NL_CN[BM_NL_CN>0]
+
+
+########### Fitted Distributions ##############
+
+
+library(fitdistrplus)
+library(logspline)
+Dist1 <- GHG_Per_Item_BM_UK[,1]
+QC <- quantile(GHG_Per_Item_BM_UK[,1], c(.01,.99)) 
+Dist1 <- Dist1 [Dist1 >= min(QC) & Dist1 <= max(QC)]
+par(mfrow=c(1,1))
+fit_ln_C <- fitdist(Dist1, "lnorm")
+fit_n_C  <- fitdist(Dist1, "norm")
+summary(fit_ln_C)
+summary(fit_n_C)
+
+par(mfrow=c(2,2))
+plot.legend <- c("norm", "lognormal")
+denscomp(list( fit_n_C, fit_ln_C), legendtext = plot.legend)
+cdfcomp (list( fit_n_C, fit_ln_C), legendtext = plot.legend)
+qqcomp  (list( fit_n_C, fit_ln_C), legendtext = plot.legend)
+ppcomp  (list( fit_n_C, fit_ln_C), legendtext = plot.legend)
+
+
+
+  #### Pure Players
+setwd("C:/Users/HP/Dropbox/Relief/Paper 3- E-commerce")
+
+File_PP <- read.csv("PP_Delivery.csv")
+StemM <- File_PP$Stem_Mileage
+DropM <- File_PP$Drop_Mileage
+DropM <- as.numeric(na.omit(DropM))
+Parcels <- File_PP$Parcels
+Parcels <- na.omit(Parcels)
+
+library ("dplyr")
+
+###### Stem Mileage
+
+fit_ln_StemM <- fitdist(StemM, "lnorm")
+fit_n_StemM <- fitdist(StemM, "norm")
+summary(fit_ln_StemM)
+summary(fit_n_StemM)
+
+par(mfrow=c(2,2))
+plot.legend <- c("normal", "lognormal")
+denscomp(list(fit_n_StemM, fit_ln_StemM), legendtext = plot.legend)
+cdfcomp (list(fit_n_StemM, fit_ln_StemM), legendtext = plot.legend)
+qqcomp  (list(fit_n_StemM, fit_ln_StemM), legendtext = plot.legend)
+ppcomp  (list(fit_n_StemM, fit_ln_StemM), legendtext = plot.legend)
+
+
+
+
+###### Drop Mileage
+
+fit_ln_DropM <- fitdist(DropM, "lnorm")
+fit_n_DropM <- fitdist(DropM, "norm")
+summary(fit_ln_DropM)
+summary(fit_n_DropM)
+
+par(mfrow=c(2,2))
+plot.legend <- c("normal", "lognormal")
+denscomp(list(fit_n_DropM, fit_ln_DropM), legendtext = plot.legend)
+cdfcomp (list(fit_n_DropM, fit_ln_DropM), legendtext = plot.legend)
+qqcomp  (list(fit_n_DropM, fit_ln_DropM), legendtext = plot.legend)
+ppcomp  (list(fit_n_DropM, fit_ln_DropM), legendtext = plot.legend)
+
+
+
+
