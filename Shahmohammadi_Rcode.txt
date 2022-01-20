@@ -3,52 +3,52 @@
 
 ### By: Sadegh Shahmohammadi et al.
 
-start_time <- Sys.time()
++start_time <- Sys.time()
 
-library(mc2d)
++library(mc2d)
 
-BS_PP <- round(rpert(n=100000, min=1, mode=2, max=5)) ### basket size pure players
-BS_BC <- round(rpert(n=100000,5,45,100))  # basket size bricks & clicks
-Product_Weight <- rlnorm(100000, meanlog = -1.38, sdlog = 1.14)
-Item_Volume <- Product_Weight
++BS_PP <- round(rpert(n=100000, min=1, mode=2, max=5)) ### basket size pure players
++BS_BC <- round(rpert(n=100000,5,45,100))  # basket size bricks & clicks
++Product_Weight <- rlnorm(100000, meanlog = -1.38, sdlog = 1.14)
++Item_Volume <- Product_Weight
 
 
 ################# Passenger Car ############
 
-Passenger_car_Maintenance_GHG <- 1080 #Kg per car
-Car_Mileage <- 2400000 #km
++Passenger_car_Maintenance_GHG <- 1080 #Kg per car
++Car_Mileage <- 2400000 #km
 
-GHG_Passenger_car_Maintenance <- Passenger_car_Maintenance_GHG/Car_Mileage #KgCO2-eq per km
++GHG_Passenger_car_Maintenance <- Passenger_car_Maintenance_GHG/Car_Mileage #KgCO2-eq per km
 
-Passenger_car_Production_GHG <- 7 # kg per kg car
-Car_Weight <- 1000
++Passenger_car_Production_GHG <- 7 # kg per kg car
++Car_Weight <- 1000
 
-GHG_Passenger_car_Production <- Passenger_car_Production_GHG*Car_Weight/Car_Mileage #KgCO2-eq per km
++GHG_Passenger_car_Production <- Passenger_car_Production_GHG*Car_Weight/Car_Mileage #KgCO2-eq per km
 
-GHG_Car_Prod_Maintain <- GHG_Passenger_car_Maintenance + GHG_Passenger_car_Production
++GHG_Car_Prod_Maintain <- GHG_Passenger_car_Maintenance + GHG_Passenger_car_Production
 #############     Pure Player      ##########
 
 #################################### Last Mile Packging PP ###########################
 
 ##### Cardboard box
 
-Box_Saturation <- rpert(100000,0.1,0.5,0.9)
-gCardbordbox_per_Liter <- 12.5 
-LastMile_box_perItem <- Item_Volume*gCardbordbox_per_Liter/Box_Saturation # in grams
-GHG_Waste <- rep(c(0,0.0015),c(79000,21000)) #kgGHG per g paper
-GHG_Waste <- sample(GHG_Waste, 100000, replace = FALSE, prob = NULL)
++Box_Saturation <- rpert(100000,0.1,0.5,0.9)
++gCardbordbox_per_Liter <- 12.5 
++LastMile_box_perItem <- Item_Volume*gCardbordbox_per_Liter/Box_Saturation # in grams
++GHG_Waste <- rep(c(0,0.0015),c(79000,21000)) #kgGHG per g paper
++GHG_Waste <- sample(GHG_Waste, 100000, replace = FALSE, prob = NULL)
 
-GHG_CardboardBox <- 0.001   #KgCO2-eq per g cardboard box 
-KG_GHG_CardboardBox_PerItem <- LastMile_box_perItem * (GHG_CardboardBox + GHG_Waste)
++GHG_CardboardBox <- 0.001   #KgCO2-eq per g cardboard box 
++KG_GHG_CardboardBox_PerItem <- LastMile_box_perItem * (GHG_CardboardBox + GHG_Waste)
 
 
 ###### Kraft Paper to fill the Void
-Void_filled_per_gKraftPaper <- 33   # in cm3
-g_Kraftpaper_PerItem <- (1/Void_filled_per_gKraftPaper)*(Item_Volume*1000)*(1-Box_Saturation)
-GHG_KraftPaper <- 0.0012  # Kg GHG per g Kraft Paper (ecoinvent unbleached Kraft Paper)
-KG_GHG_KraftPaper_PerItem <- g_Kraftpaper_PerItem * (GHG_KraftPaper  + GHG_Waste)
++Void_filled_per_gKraftPaper <- 33   # in cm3
++g_Kraftpaper_PerItem <- (1/Void_filled_per_gKraftPaper)*(Item_Volume*1000)*(1-Box_Saturation)
++GHG_KraftPaper <- 0.0012  # Kg GHG per g Kraft Paper (ecoinvent unbleached Kraft Paper)
++KG_GHG_KraftPaper_PerItem <- g_Kraftpaper_PerItem * (GHG_KraftPaper  + GHG_Waste)
 
-Total_GHG_LM_Packging_PP2 <- KG_GHG_CardboardBox_PerItem + KG_GHG_KraftPaper_PerItem
++Total_GHG_LM_Packging_PP2 <- KG_GHG_CardboardBox_PerItem + KG_GHG_KraftPaper_PerItem
 
 Total_GHG_Packaging_PP2 <- rep(999,100000)
 for (i in 1:100000){
