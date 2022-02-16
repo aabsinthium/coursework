@@ -58,101 +58,102 @@ Total_GHG_Packaging_PP2[i] <-  sum(sample(Total_GHG_LM_Packging_PP2, BS_PP[i], r
 
 ######################################## Last Mile Delivery PP #################################
 
-LCV_GHG_per_km <- rlnorm(100000,-1.36,.23)
++LCV_GHG_per_km <- rlnorm(100000,-1.36,.23)
 
-Stem_Mileage <- rlnorm (100000, 2.88,.76)*2 
-Drop_Mileage <- rpert(100000,3.6,40,96)
++Stem_Mileage <- rlnorm (100000, 2.88,.76)*2 
++Drop_Mileage <- rpert(100000,3.6,40,96)
 
-Total_LMDistance <- Stem_Mileage + Drop_Mileage 
++Total_LMDistance <- Stem_Mileage + Drop_Mileage 
 
-Deliveries_per_Tour <- rpert(100000,32,100,168) 
++Deliveries_per_Tour <- rpert(100000,32,100,168) 
 
-Distance_per_Drop <- Total_LMDistance/Deliveries_per_Tour 
++Distance_per_Drop <- Total_LMDistance/Deliveries_per_Tour 
 
-CargoBike_EI_Bike <- 0.05 # KgCO2-eq/km
-CargoBike_EI_Battery <- 0.01 # KgCO2-eq/km
++CargoBike_EI_Bike <- 0.05 # KgCO2-eq/km
++CargoBike_EI_Battery <- 0.01 # KgCO2-eq/km
 
-CargoBike_EI_Electricity_CN <- 0.02*1.19  # KgCO2-eq/km (EI china = 1.19 kgCO2-eq per kWh and 0.02 kWh/km) 
-CargoBike_EI_Electricity_NL <- 0.02*0.62
-CargoBike_EI_Electricity_UK <- 0.02*0.83
-CargoBike_EI_Electricity_US <- 0.02*0.70
++CargoBike_EI_Electricity_CN <- 0.02*1.19  # KgCO2-eq/km (EI china = 1.19 kgCO2-eq per kWh and 0.02 kWh/km) 
++CargoBike_EI_Electricity_NL <- 0.02*0.62
++CargoBike_EI_Electricity_UK <- 0.02*0.83
++CargoBike_EI_Electricity_US <- 0.02*0.70
 
-CargoBike_EI_total <- CargoBike_EI_Bike + CargoBike_EI_Battery + CargoBike_EI_Electricity_CN  # KgCO2-eq/km
++CargoBike_EI_total <- CargoBike_EI_Bike + CargoBike_EI_Battery + CargoBike_EI_Electricity_CN  # KgCO2-eq/km
 
-Distance_CDP <- rpert(100000,2,4,10) #in km
-Average_car_GHGperKm <- 0.13 + GHG_Car_Prod_Maintain
-
-
-GHG_per_Drop <- Distance_per_Drop*LCV_GHG_per_km  # in KgCO2-eq
-
-GHG_per_Drop_CargoBike <- (Stem_Mileage/Deliveries_per_Tour) * LCV_GHG_per_km + (Drop_Mileage/Deliveries_per_Tour) * CargoBike_EI_total   # in KgCO2-eq  
++Distance_CDP <- rpert(100000,2,4,10) #in km
++Average_car_GHGperKm <- 0.13 + GHG_Car_Prod_Maintain
 
 
++GHG_per_Drop <- Distance_per_Drop*LCV_GHG_per_km  # in KgCO2-eq
 
-Filed_Delivery<- rbinom(100000, 1, 0.14)
-Failed_n_Redelivered <- rbinom(100000, 1, 0.5) 
-Extra_GHG <- rep(999,100000)
-
-Total_GHG_per_Drop <- rep(999,100000)
-
-Extra_GHG_per_Drop_CargoBike <-rep(999,100000)
-
-Total_GHG_per_Drop_CargoBike <- rep(999,100000)
++GHG_per_Drop_CargoBike <- (Stem_Mileage/Deliveries_per_Tour) * LCV_GHG_per_km + (Drop_Mileage/Deliveries_per_Tour) * CargoBike_EI_total   # in KgCO2-eq  
 
 
-for (i in 1:100000){
+
++Filed_Delivery<- rbinom(100000, 1, 0.14)
++Failed_n_Redelivered <- rbinom(100000, 1, 0.5) 
++Extra_GHG <- rep(999,100000)
+
++Total_GHG_per_Drop <- rep(999,100000)
+
++Extra_GHG_per_Drop_CargoBike <-rep(999,100000)
+
++Total_GHG_per_Drop_CargoBike <- rep(999,100000)
+
+
++for (i in 1:100000){
   
-  if (Filed_Delivery[i] == 0 ) {
+  
+  +if (Filed_Delivery[i] == 0 ) {
     
-    Extra_GHG[i] <- 0
+    +Extra_GHG[i] <- 0
  
-    Extra_GHG_per_Drop_CargoBike[i] <- 0
+    +Extra_GHG_per_Drop_CargoBike[i] <- 0
    
     
-  } else if ( Filed_Delivery[i] == 1 & Failed_n_Redelivered[i] == 1) {
+  } +else if ( Filed_Delivery[i] == 1 & Failed_n_Redelivered[i] == 1) {
    
-    Extra_GHG[i] <- GHG_per_Drop[i]
+    +Extra_GHG[i] <- GHG_per_Drop[i]
     
-    Extra_GHG_per_Drop_CargoBike[i] <- GHG_per_Drop_CargoBike[i] 
+    +Extra_GHG_per_Drop_CargoBike[i] <- +GHG_per_Drop_CargoBike[i] 
    
     
-  } else {
-    if(Distance_CDP[i] <= 4) {
+  } +else {
+    +if(Distance_CDP[i] <= 4) {
       
-      Extra_GHG[i] <- 0
+      +Extra_GHG[i] <- 0
       
-      Extra_GHG_per_Drop_CargoBike[i] <- 0 
+      +Extra_GHG_per_Drop_CargoBike[i] <- 0 
      
     }
-    else {
+    +else {
       
-      Extra_GHG[i] <- Distance_CDP[i] * Average_car_GHGperKm
+      +Extra_GHG[i] <- Distance_CDP[i] * Average_car_GHGperKm
      
-      Extra_GHG_per_Drop_CargoBike[i] <- Distance_CDP[i] * Average_car_GHGperKm
+      +Extra_GHG_per_Drop_CargoBike[i] <- Distance_CDP[i] * +Average_car_GHGperKm
       
     }
   } 
   
-  Total_GHG_per_Drop[i] <- GHG_per_Drop[i] + Extra_GHG[i] 
+  +Total_GHG_per_Drop[i] <- GHG_per_Drop[i] + Extra_GHG[i] 
 
-  Total_GHG_per_Drop_CargoBike[i] <- GHG_per_Drop_CargoBike[i] + Extra_GHG_per_Drop_CargoBike[i]
+  +Total_GHG_per_Drop_CargoBike[i] <- GHG_per_Drop_CargoBike[i] + Extra_GHG_per_Drop_CargoBike[i]
   
 }
 
 
-Total_LM_GHG_Per_Item <-  (Total_GHG_per_Drop + Total_GHG_Packaging_PP2)/BS_PP
++Total_LM_GHG_Per_Item <-  (Total_GHG_per_Drop + Total_GHG_Packaging_PP2)/BS_PP
 
-Total_LM_GHG_Per_Item_CargoBike <- (Total_GHG_per_Drop_CargoBike + Total_GHG_Packaging_PP2)/BS_PP
++Total_LM_GHG_Per_Item_CargoBike <- (Total_GHG_per_Drop_CargoBike + Total_GHG_Packaging_PP2)/BS_PP
 
 
 
 ############## Bricks and Clicks
 
 
-Distance_per_delivery_BC <- rpert(100000,2.1,4.3,7.3) #reference: New trends on urban goods movement (France) 
-Total_LM_GHG_BC_perDrop <- Distance_per_delivery_BC*LCV_GHG_per_km
++Distance_per_delivery_BC <- rpert(100000,2.1,4.3,7.3) #reference: New trends on urban goods movement (France) 
++Total_LM_GHG_BC_perDrop <- Distance_per_delivery_BC*LCV_GHG_per_km
 
-Total_LM_GHG_Per_Item_BC <- Total_LM_GHG_BC_perDrop/BS_BC
++Total_LM_GHG_Per_Item_BC <- Total_LM_GHG_BC_perDrop/BS_BC
 
 ############################ Bricks & Mortar UK #################################
 
