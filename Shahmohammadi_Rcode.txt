@@ -157,160 +157,160 @@ Total_GHG_Packaging_PP2[i] <-  sum(sample(Total_GHG_LM_Packging_PP2, BS_PP[i], r
 
 ############################ Bricks & Mortar UK #################################
 
-Mode_UK <- c(rep(1,9000),rep(2,80000), rep(3,10000),rep(4,1000))   #1: Walk, 2: Car/van, 3: Bus, 4: Bike
-Mode_UK <- sample(Mode_UK, 100000, replace = FALSE, prob = NULL)
++Mode_UK <- c(rep(1,9000),rep(2,80000), rep(3,10000),rep(4,1000))   #1: Walk, 2: Car/van, 3: Bus, 4: Bike
++Mode_UK <- sample(Mode_UK, 100000, replace = FALSE, prob = NULL)
 
-Distance_Walk_UK <- rlnorm(100000, meanlog = -0.28, sdlog = 0.62)*1.609344  # *1.609 converts miles to km
-Distance_Car_UK <- rlnorm(100000, meanlog = 1.11, sdlog = 1.01)*1.609344
-Distance_Bus_UK <- rlnorm(100000, meanlog = 1.06, sdlog = 0.82)*1.609344
-Distance_Bike_UK <- rlnorm(100000, meanlog = 1.16, sdlog = 2.19)*1.609344
++Distance_Walk_UK <- rlnorm(100000, meanlog = -0.28, sdlog = 0.62)*1.609344  # *1.609 converts miles to km
++Distance_Car_UK <- rlnorm(100000, meanlog = 1.11, sdlog = 1.01)*1.609344
++Distance_Bus_UK <- rlnorm(100000, meanlog = 1.06, sdlog = 0.82)*1.609344
++Distance_Bike_UK <- rlnorm(100000, meanlog = 1.16, sdlog = 2.19)*1.609344
 
-GHGperKm_Walk <- 0
-GHGperKm_Car_UK <- rlnorm(100000, meanlog = -2.08, sdlog = 0.20)+ GHG_Car_Prod_Maintain
-GHGperKm_Bus_UK <- rlnorm(100000, meanlog = -2.27, sdlog = 0.28)
-GHGperKm_Bike <- 0
++GHGperKm_Walk <- 0
++GHGperKm_Car_UK <- rlnorm(100000, meanlog = -2.08, sdlog = 0.20)+ GHG_Car_Prod_Maintain
++GHGperKm_Bus_UK <- rlnorm(100000, meanlog = -2.27, sdlog = 0.28)
++GHGperKm_Bike <- 0
 
-Trip_Allocation <- rep(1,100000)
-Trip_Allocation_TC <- runif(100000, 0,1)
+?Trip_Allocation <- rep(1,100000)
+?Trip_Allocation_TC <- runif(100000, 0,1)
 
-GHG_Per_Trip_BM_UK <- rep(999,100000)
-GHG_Per_Trip_BM_UK_TC <-  rep(999,100000) # TC: Trip Chaining
+?GHG_Per_Trip_BM_UK <- rep(999,100000)
+?GHG_Per_Trip_BM_UK_TC <-  rep(999,100000) # TC: Trip Chaining
 
-BS_UK <- rep(999,100000) 
++BS_UK <- rep(999,100000) 
 
 for (i in 1:100000){
   if(Mode_UK[i]== 1){
-    BS_UK[i] <- floor(rpert(1,1,5,15))
-    GHG_Per_Trip_BM_UK[i] <- Distance_Walk_UK[i]*2*GHGperKm_Walk
-    GHG_Per_Trip_BM_UK_TC[i] <- GHG_Per_Trip_BM_UK[i]
+    +BS_UK[i] <- floor(rpert(1,1,5,15))
+    +GHG_Per_Trip_BM_UK[i] <- Distance_Walk_UK[i]*2*GHGperKm_Walk
+    +GHG_Per_Trip_BM_UK_TC[i] <- GHG_Per_Trip_BM_UK[i]
   } else if (Mode_UK[i]== 2){
-    BS_UK[i] <- floor(rpert(1,1,30,70))
-    GHG_Per_Trip_BM_UK[i] <- Distance_Car_UK[i]*2*GHGperKm_Car_UK[i]*Trip_Allocation[i]
-    GHG_Per_Trip_BM_UK_TC[i] <- Distance_Car_UK[i]*2*GHGperKm_Car_UK[i]*Trip_Allocation_TC[i] # TC: Trip Chaining
+    +BS_UK[i] <- floor(rpert(1,1,30,70))
+    ?GHG_Per_Trip_BM_UK[i] <- Distance_Car_UK[i]*2*GHGperKm_Car_UK[i]*Trip_Allocation[i]
+    ?GHG_Per_Trip_BM_UK_TC[i] <- Distance_Car_UK[i]*2*GHGperKm_Car_UK[i]*Trip_Allocation_TC[i] # TC: Trip Chaining
   } else if (Mode_UK[i]== 3){
-    BS_UK[i] <- floor(rpert(1,1,10,20))
-    GHG_Per_Trip_BM_UK[i] <- Distance_Bus_UK[i]*2*GHGperKm_Bus_UK[i]
-    GHG_Per_Trip_BM_UK_TC[i] <- GHG_Per_Trip_BM_UK[i]
+    +BS_UK[i] <- floor(rpert(1,1,10,20))
+    +GHG_Per_Trip_BM_UK[i] <- Distance_Bus_UK[i]*2*GHGperKm_Bus_UK[i]
+    +GHG_Per_Trip_BM_UK_TC[i] <- GHG_Per_Trip_BM_UK[i]
   } else {
-    BS_UK[i] <- floor(rpert(1,1,5,15))
-    GHG_Per_Trip_BM_UK[i] <- Distance_Bike_UK[i]*2*GHGperKm_Bike
-    GHG_Per_Trip_BM_UK_TC[i] <- GHG_Per_Trip_BM_UK[i]
+    +BS_UK[i] <- floor(rpert(1,1,5,15))
+    +GHG_Per_Trip_BM_UK[i] <- Distance_Bike_UK[i]*2*GHGperKm_Bike
+    +GHG_Per_Trip_BM_UK_TC[i] <- GHG_Per_Trip_BM_UK[i]
   }
   
 }
-Median_BM_UK<- median(GHG_Per_Trip_BM_UK) 
-Median_BM_UK_TC<- median(GHG_Per_Trip_BM_UK_TC) 
+?Median_BM_UK<- median(GHG_Per_Trip_BM_UK) 
+?Median_BM_UK_TC<- median(GHG_Per_Trip_BM_UK_TC) 
 
 
 
 ############################ Bricks & Mortar US #################################
 
-Mode_US <- c(rep(1,5000),rep(2,94000), rep(3,1000))   #1: Walk, 2: Car/van, 3: Bus
-Mode_US <- sample(Mode_US, 100000, replace = FALSE, prob = NULL)
++Mode_US <- c(rep(1,5000),rep(2,94000), rep(3,1000))   #1: Walk, 2: Car/van, 3: Bus
++Mode_US <- sample(Mode_US, 100000, replace = FALSE, prob = NULL)
 
-Distance_Walk_US <- rlnorm(100000, meanlog = -1.37, sdlog = 0.85)*1.609344
-Distance_Car_US <- rlnorm(100000, meanlog = 1.10, sdlog = 1.15)*1.609344
-Distance_Bus_US <- rlnorm(100000, meanlog = 1.20, sdlog = 0.79)*1.609344
++Distance_Walk_US <- rlnorm(100000, meanlog = -1.37, sdlog = 0.85)*1.609344
++Distance_Car_US <- rlnorm(100000, meanlog = 1.10, sdlog = 1.15)*1.609344
++Distance_Bus_US <- rlnorm(100000, meanlog = 1.20, sdlog = 0.79)*1.609344
 
-GHGperKm_Walk <- 0
-GHGperKm_Car_US <- rlnorm(100000, meanlog = -1.59, sdlog = 0.21)+GHG_Car_Prod_Maintain
-GHGperKm_Bus_US <- rlnorm(100000, meanlog = -2.27, sdlog = 0.27)
-GHGperKm_Bike <- 0
++GHGperKm_Walk <- 0
++GHGperKm_Car_US <- rlnorm(100000, meanlog = -1.59, sdlog = 0.21)+GHG_Car_Prod_Maintain
++GHGperKm_Bus_US <- rlnorm(100000, meanlog = -2.27, sdlog = 0.27)
++GHGperKm_Bike <- 0
 
-GHG_Per_Trip_BM_US <- rep(0,100000)
-GHG_Per_Trip_BM_US_TC <- rep(0,100000)
+?GHG_Per_Trip_BM_US <- rep(0,100000)
+?GHG_Per_Trip_BM_US_TC <- rep(0,100000)
 
-BS_US <- rep(0,100000) 
++BS_US <- rep(0,100000) 
 
 for (i in 1:100000){
   if(Mode_US[i]== 1){
-    BS_US[i] <- floor(rpert(1,1,5,15))
-    GHG_Per_Trip_BM_US[i] <- Distance_Walk_US[i]*2*GHGperKm_Walk
-    GHG_Per_Trip_BM_US_TC[i] <- GHG_Per_Trip_BM_US[i] 
+    +BS_US[i] <- floor(rpert(1,1,5,15))
+    +GHG_Per_Trip_BM_US[i] <- Distance_Walk_US[i]*2*GHGperKm_Walk
+    +GHG_Per_Trip_BM_US_TC[i] <- GHG_Per_Trip_BM_US[i] 
   } else if (Mode_US[i]== 2){
-    BS_US[i] <- floor(rpert(1,1,30,70))
-    GHG_Per_Trip_BM_US[i] <- Distance_Car_US[i]*2*GHGperKm_Car_US[i]*Trip_Allocation[i]
-    GHG_Per_Trip_BM_US_TC[i] <- Distance_Car_US[i]*2*GHGperKm_Car_US[i]*Trip_Allocation_TC[i]   # TC: Trip Chaining
+    +BS_US[i] <- floor(rpert(1,1,30,70))
+    ?GHG_Per_Trip_BM_US[i] <- Distance_Car_US[i]*2*GHGperKm_Car_US[i]*Trip_Allocation[i]
+    ?GHG_Per_Trip_BM_US_TC[i] <- Distance_Car_US[i]*2*GHGperKm_Car_US[i]*Trip_Allocation_TC[i]   # TC: Trip Chaining
   } else {
-    BS_US[i] <- floor(rpert(1,1,10,20))
-    GHG_Per_Trip_BM_US[i] <- Distance_Bus_US[i]*2*GHGperKm_Bus_US[i]
-    GHG_Per_Trip_BM_US_TC[i] <- GHG_Per_Trip_BM_US[i]
+    +BS_US[i] <- floor(rpert(1,1,10,20))
+    +GHG_Per_Trip_BM_US[i] <- Distance_Bus_US[i]*2*GHGperKm_Bus_US[i]
+    +GHG_Per_Trip_BM_US_TC[i] <- GHG_Per_Trip_BM_US[i]
   }
   
 }
-Median_BM_US<- median(GHG_Per_Trip_BM_US) 
-Median_BM_US_TC<- median(GHG_Per_Trip_BM_US_TC) 
+?Median_BM_US<- median(GHG_Per_Trip_BM_US) 
+?Median_BM_US_TC<- median(GHG_Per_Trip_BM_US_TC) 
 
 
 
 ############################ Bricks & Mortar NL #################################
 
-Mode_NL <- c(rep(1,17172),rep(2,44444), rep(3,7071),rep(4,31313))   #1: Walk, 2: Car/van, 3: Bus/tram/metro, 4: Bike
-Mode_NL <- sample(Mode_NL, 100000, replace = FALSE, prob = NULL)
++Mode_NL <- c(rep(1,17172),rep(2,44444), rep(3,7071),rep(4,31313))   #1: Walk, 2: Car/van, 3: Bus/tram/metro, 4: Bike
++Mode_NL <- sample(Mode_NL, 100000, replace = FALSE, prob = NULL)
 
-Distance_Walk_NL <- rlnorm(100000, meanlog = -0.89, sdlog = 0.91)
-Distance_Car_NL <- rlnorm(100000, meanlog = 1.25, sdlog = 1.28)
-Distance_Bus_NL <- rlnorm(100000, meanlog = 1.82, sdlog = 1.06)
-Distance_Bike_NL <- rlnorm(100000, meanlog = 0.29, sdlog = 0.92)
-Distance_Scooter_NL <- rlnorm(100000, meanlog = 0.43, sdlog = 1.02)
++Distance_Walk_NL <- rlnorm(100000, meanlog = -0.89, sdlog = 0.91)
++Distance_Car_NL <- rlnorm(100000, meanlog = 1.25, sdlog = 1.28)
++Distance_Bus_NL <- rlnorm(100000, meanlog = 1.82, sdlog = 1.06)
++Distance_Bike_NL <- rlnorm(100000, meanlog = 0.29, sdlog = 0.92)
+#Distance_Scooter_NL <- rlnorm(100000, meanlog = 0.43, sdlog = 1.02)
 
-GHGperKm_Walk <- 0
-GHGperKm_Car_NL <- rlnorm(100000, meanlog = -2.07, sdlog = 0.26) + GHG_Car_Prod_Maintain
-GHGperKm_Bus_NL <- rlnorm(100000, meanlog = -2.25, sdlog = 0.19)
-GHGperKm_Bike <- 0
++GHGperKm_Walk <- 0
++GHGperKm_Car_NL <- rlnorm(100000, meanlog = -2.07, sdlog = 0.26) + GHG_Car_Prod_Maintain
++GHGperKm_Bus_NL <- rlnorm(100000, meanlog = -2.25, sdlog = 0.19)
++GHGperKm_Bike <- 0
 #GHGperKm_Scooter <- 0.085 
 
 
-GHG_Per_Trip_BM_NL <- rep(0,100000)
-GHG_Per_Trip_BM_NL_TC <- rep(0,100000)
+?GHG_Per_Trip_BM_NL <- rep(0,100000)
+?GHG_Per_Trip_BM_NL_TC <- rep(0,100000)
 
-BS_NL <- rep(0,100000)
++BS_NL <- rep(0,100000)
 
 for (i in 1:100000){
   if(Mode_NL[i]== 1){
-    BS_NL[i] <- floor(rpert(1,1,5,15))
-    GHG_Per_Trip_BM_NL[i] <- Distance_Walk_NL[i]*2*GHGperKm_Walk   
-    GHG_Per_Trip_BM_NL_TC[i] <- GHG_Per_Trip_BM_NL[i] 
+    +BS_NL[i] <- floor(rpert(1,1,5,15))
+    +GHG_Per_Trip_BM_NL[i] <- Distance_Walk_NL[i]*2*GHGperKm_Walk   
+    +GHG_Per_Trip_BM_NL_TC[i] <- GHG_Per_Trip_BM_NL[i] 
   } else if (Mode_NL[i]== 2){
-    BS_NL[i] <- floor(rpert(1,1,30,70))
-    GHG_Per_Trip_BM_NL[i] <- Distance_Car_NL[i]*2*GHGperKm_Car_NL[i]*Trip_Allocation[i]
-    GHG_Per_Trip_BM_NL_TC[i] <- Distance_Car_NL[i]*2*GHGperKm_Car_NL[i]*Trip_Allocation_TC[i]
+    +BS_NL[i] <- floor(rpert(1,1,30,70))
+    ?GHG_Per_Trip_BM_NL[i] <- Distance_Car_NL[i]*2*GHGperKm_Car_NL[i]*Trip_Allocation[i]
+    ?GHG_Per_Trip_BM_NL_TC[i] <- Distance_Car_NL[i]*2*GHGperKm_Car_NL[i]*Trip_Allocation_TC[i]
   } else if (Mode_NL[i]== 3){
-    BS_NL[i] <- floor(rpert(1,1,10,20))
-    GHG_Per_Trip_BM_NL[i] <- Distance_Bus_NL[i]*2*GHGperKm_Bus_NL[i]
-    GHG_Per_Trip_BM_NL_TC[i] <- GHG_Per_Trip_BM_NL[i]
+    +BS_NL[i] <- floor(rpert(1,1,10,20))
+    +GHG_Per_Trip_BM_NL[i] <- Distance_Bus_NL[i]*2*GHGperKm_Bus_NL[i]
+    +GHG_Per_Trip_BM_NL_TC[i] <- GHG_Per_Trip_BM_NL[i]
   } else {
-    BS_NL[i] <- floor(rpert(1,1,5,15))
-    GHG_Per_Trip_BM_NL[i] <- Distance_Bike_NL[i]*2*GHGperKm_Bike 
-    GHG_Per_Trip_BM_NL_TC[i] <- GHG_Per_Trip_BM_NL[i]
+    +BS_NL[i] <- floor(rpert(1,1,5,15))
+    +GHG_Per_Trip_BM_NL[i] <- Distance_Bike_NL[i]*2*GHGperKm_Bike 
+    +GHG_Per_Trip_BM_NL_TC[i] <- GHG_Per_Trip_BM_NL[i]
   }
   
 }
-Median_BM_NL<- median(GHG_Per_Trip_BM_NL)
-Median_BM_NL_TC<- median(GHG_Per_Trip_BM_NL_TC)
+?Median_BM_NL<- median(GHG_Per_Trip_BM_NL)
+?Median_BM_NL_TC<- median(GHG_Per_Trip_BM_NL_TC)
 
 
 
 
 ############################ Bricks&Mortar China #################################
 
-Mode_CN <- c(rep(1,58350),rep(2,8330), rep(3,3120),rep(4,30200))   #1: Walk, 2: Car/van, 3: Bus, 4: Bike
-Mode_CN <- sample(Mode_CN, 100000, replace = FALSE, prob = NULL)
++Mode_CN <- c(rep(1,58350),rep(2,8330), rep(3,3120),rep(4,30200))   #1: Walk, 2: Car/van, 3: Bus, 4: Bike
++Mode_CN <- sample(Mode_CN, 100000, replace = FALSE, prob = NULL)
 
-BS_CN <- rep(0,100000) # Basket size
++BS_CN <- rep(0,100000) # Basket size
 
-Distance_Walk_CN <- rlnorm(100000, meanlog = -0.51, sdlog = 0.62)
-Distance_Car_CN <- rlnorm(100000, meanlog = 0.60, sdlog = 1.01)
-Distance_Bus_CN <- rlnorm(100000, meanlog = 0.58, sdlog = 0.89)
-Distance_Bike_CN <- rlnorm(100000, meanlog = -0.10, sdlog = 0.79)
++Distance_Walk_CN <- rlnorm(100000, meanlog = -0.51, sdlog = 0.62)
++Distance_Car_CN <- rlnorm(100000, meanlog = 0.60, sdlog = 1.01)
++Distance_Bus_CN <- rlnorm(100000, meanlog = 0.58, sdlog = 0.89)
++Distance_Bike_CN <- rlnorm(100000, meanlog = -0.10, sdlog = 0.79)
 
-GHGperKm_Walk <- 0
-GHGperKm_Car_CN <- rlnorm(100000, meanlog = -1.88, sdlog = 0.16)+GHG_Car_Prod_Maintain
-GHGperKm_Bus_CN <- rlnorm(100000, meanlog = -2.24, sdlog = 0.14)
-GHGperKm_Bike <- 0
++GHGperKm_Walk <- 0
++GHGperKm_Car_CN <- rlnorm(100000, meanlog = -1.88, sdlog = 0.16)+GHG_Car_Prod_Maintain
++GHGperKm_Bus_CN <- rlnorm(100000, meanlog = -2.24, sdlog = 0.14)
++GHGperKm_Bike <- 0
 
-GHG_Per_Trip_BM_CN <- rep(0,100000)
-GHG_Per_Trip_BM_CN_TC <- rep(0,100000)
+?GHG_Per_Trip_BM_CN <- rep(0,100000)
+?GHG_Per_Trip_BM_CN_TC <- rep(0,100000)
 
 
 
@@ -318,27 +318,27 @@ for (i in 1:100000){
   
   
   if(Mode_CN[i]== 1){
-    BS_CN[i] <- floor(rpert(1,1,5,15))
-    GHG_Per_Trip_BM_CN[i] <- Distance_Walk_CN[i]*2*GHGperKm_Walk
-    GHG_Per_Trip_BM_CN_TC[i] <- GHG_Per_Trip_BM_CN[i]
+    +BS_CN[i] <- floor(rpert(1,1,5,15))
+    +GHG_Per_Trip_BM_CN[i] <- Distance_Walk_CN[i]*2*GHGperKm_Walk
+    +GHG_Per_Trip_BM_CN_TC[i] <- GHG_Per_Trip_BM_CN[i]
   } else if (Mode_CN[i]== 2){
-    BS_CN[i] <- floor(rpert(1,1,30,70))
-    GHG_Per_Trip_BM_CN[i] <- Distance_Car_CN[i]*2*GHGperKm_Car_CN[i]*Trip_Allocation[i]
-    GHG_Per_Trip_BM_CN_TC[i] <- Distance_Car_CN[i]*2*GHGperKm_Car_CN[i]*Trip_Allocation_TC[i]
+    +BS_CN[i] <- floor(rpert(1,1,30,70))
+    ?GHG_Per_Trip_BM_CN[i] <- Distance_Car_CN[i]*2*GHGperKm_Car_CN[i]*Trip_Allocation[i]
+    ?GHG_Per_Trip_BM_CN_TC[i] <- Distance_Car_CN[i]*2*GHGperKm_Car_CN[i]*Trip_Allocation_TC[i]
   } else if (Mode_CN[i]== 3){
-    BS_CN[i] <- floor(rpert(1,1,10,20))
-    GHG_Per_Trip_BM_CN[i] <- Distance_Bus_CN[i]*2*GHGperKm_Bus_CN[i]
-    GHG_Per_Trip_BM_CN_TC[i] <- GHG_Per_Trip_BM_CN[i]
+    +BS_CN[i] <- floor(rpert(1,1,10,20))
+    +GHG_Per_Trip_BM_CN[i] <- Distance_Bus_CN[i]*2*GHGperKm_Bus_CN[i]
+    +GHG_Per_Trip_BM_CN_TC[i] <- GHG_Per_Trip_BM_CN[i]
   } else {
-    BS_CN[i] <- floor(rpert(1,1,5,15))
-    GHG_Per_Trip_BM_CN[i] <- Distance_Bike_CN[i]*2*GHGperKm_Bike
-    GHG_Per_Trip_BM_CN_TC[i] <- GHG_Per_Trip_BM_CN[i]
+    +BS_CN[i] <- floor(rpert(1,1,5,15))
+    +GHG_Per_Trip_BM_CN[i] <- Distance_Bike_CN[i]*2*GHGperKm_Bike
+    +GHG_Per_Trip_BM_CN_TC[i] <- GHG_Per_Trip_BM_CN[i]
   }
   
 }
 
-Median_BM_CN<- median(GHG_Per_Trip_BM_CN)
-Median_BM_CN_TC<- median(GHG_Per_Trip_BM_CN_TC)
+?Median_BM_CN<- median(GHG_Per_Trip_BM_CN)
+?Median_BM_CN_TC<- median(GHG_Per_Trip_BM_CN_TC)
 
 
 
